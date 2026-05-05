@@ -1,0 +1,18 @@
+# PostgreSQL with PostGIS Extension for Render
+FROM postgis/postgis:15-3.3
+
+# Install additional tools if needed
+RUN apt-get update && apt-get install -y \
+    postgresql-15-postgis-3-scripts \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy initialization script
+COPY init.sql /docker-entrypoint-initdb.d/
+
+# Environment variables will be provided by Render
+# POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB
+
+EXPOSE 5432
+
+# Use the default entrypoint from the postgis image
+CMD ["postgres"]
