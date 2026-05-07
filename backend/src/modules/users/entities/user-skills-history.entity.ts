@@ -76,5 +76,5 @@ export class UserSkillsHistory {
 
   // Convenience field for filtering last 30 days
   @Column({ type: 'boolean', default: true })
-  isRecent: boolean; // true if createdAt > 30 days ago
+  isRecent: boolean; // true if change occurred within the last 30 days
 }

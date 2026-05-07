@@ -91,7 +91,7 @@ The `render.yaml` blueprint creates:
 
 ### 3. Web Service (NestJS Backend)
 - **Type**: Node.js web service
-- **Runtime**: Node.js (latest LTS)
+- **Runtime**: Node.js 20 LTS (pinned via `nodeVersion: 20` in `render.yaml` and `.nvmrc`)
 - **Plan**: Starter ($7/month) or Free
 - **Auto-deploy**: Enabled on git push
 - **Health Check**: `/api/v1/health`

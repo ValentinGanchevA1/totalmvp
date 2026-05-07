@@ -161,6 +161,9 @@ export class User {
   @Column({ type: 'timestamp', nullable: true })
   skillsLastCalculatedAt: Date; // When skills were last recalculated
 
+  @CreateDateColumn()
+  createdAt: Date;
+
   @UpdateDateColumn()
   updatedAt: Date;
 

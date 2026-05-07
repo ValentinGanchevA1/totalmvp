@@ -9,6 +9,7 @@ services:
     region: oregon
     plan: starter
     rootDir: backend
+    nodeVersion: 20
     buildCommand: npm install && npm run build
     startCommand: node dist/main
     healthCheckPath: /api/v1/health

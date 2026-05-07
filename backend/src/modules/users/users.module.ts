@@ -5,6 +5,7 @@ import { Verification } from './entities/verification.entity';
 import { SocialLink } from './entities/social-link.entity';
 import { UsersService } from './user.service';
 import { UsersController } from './user.controller';
+import { ProfilesLegacyController } from './profiles-legacy.controller';
 import { CommonModule } from '../../common/common.module';
 
 @Module({
@@ -12,7 +13,7 @@ import { CommonModule } from '../../common/common.module';
     TypeOrmModule.forFeature([User, Verification, SocialLink]),
     CommonModule,
   ],
-  controllers: [UsersController],
+  controllers: [UsersController, ProfilesLegacyController],
   providers: [UsersService],
   exports: [UsersService, TypeOrmModule],
 })

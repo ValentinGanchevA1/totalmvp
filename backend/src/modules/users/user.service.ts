@@ -5,7 +5,9 @@ import { Repository } from 'typeorm';
 import { User, Gender } from './entities/user.entity';
 import { S3Service } from '../../common/s3.service';
 import { RedisService } from '../../common/redis.service';
+import { CacheService } from '../../common/cache.service';
 import { CreateProfileDto, UpdateProfileDto, Gender as DtoGender } from './dto/create-profile.dto';
+import { UserProfileDto } from './dto/user.dto';
 
 export interface ProfileCompletion {
   steps: {
@@ -28,9 +30,10 @@ export class UsersService {
     private usersRepo: Repository<User>,
     private s3Service: S3Service,
     private redis: RedisService,
+    private cache: CacheService,
   ) {}
 
-  async createProfile(userId: string, dto: CreateProfileDto): Promise<Partial<User>> {
+  async createProfile(userId: string, dto: CreateProfileDto): Promise<UserProfileDto> {
     const user = await this.usersRepo.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
 
@@ -69,13 +72,12 @@ export class UsersService {
 
     await this.usersRepo.save(user);
 
-    // Invalidate any cached profile
-    await this.redis.del(`user:profile:${userId}`);
+    await this.cache.delete(`user:profile:${userId}`);
 
     return this.sanitizeUser(user);
   }
 
-  async updateProfile(userId: string, dto: UpdateProfileDto): Promise<Partial<User>> {
+  async updateProfile(userId: string, dto: UpdateProfileDto): Promise<UserProfileDto> {
     const user = await this.usersRepo.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
 
@@ -108,7 +110,7 @@ export class UsersService {
     }
 
     await this.usersRepo.save(user);
-    await this.redis.del(`user:profile:${userId}`);
+    await this.cache.delete(`user:profile:${userId}`);
 
     return this.sanitizeUser(user);
   }
@@ -183,18 +185,15 @@ export class UsersService {
     await this.usersRepo.save(user);
   }
 
-  async getProfile(userId: string): Promise<Partial<User>> {
-    // Check cache first
-    const cached = await this.redis.get(`user:profile:${userId}`);
-    if (cached) return JSON.parse(cached);
+  async getProfile(userId: string): Promise<UserProfileDto> {
+    const cached = await this.cache.get<UserProfileDto>(`user:profile:${userId}`);
+    if (cached) return cached;
 
     const user = await this.usersRepo.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
 
     const sanitized = this.sanitizeUser(user);
-
-    // Cache for 5 minutes
-    await this.redis.set(`user:profile:${userId}`, JSON.stringify(sanitized), 300);
+    await this.cache.set(`user:profile:${userId}`, sanitized, 300);
 
     return sanitized;
   }
@@ -223,14 +222,30 @@ export class UsersService {
     };
   }
 
-  async getPublicProfile(userId: string): Promise<Partial<User>> {
-      const user = await this.usersRepo.findOne({ where: { id: userId } });
-      if (!user) throw new NotFoundException('User not found');
-      return this.sanitizeUser(user);
+  async getPublicProfile(userId: string): Promise<UserProfileDto> {
+    const user = await this.usersRepo.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+    return this.sanitizeUser(user);
   }
 
-  private sanitizeUser(user: User): Partial<User> {
-    const { passwordHash, stripeCustomerId, ...safe } = user;
-    return safe;
+  private sanitizeUser(user: User): UserProfileDto {
+    return {
+      id: user.id,
+      displayName: user.displayName,
+      avatarUrl: user.avatarUrl,
+      status: user.status,
+      createdAt: user.createdAt,
+      bio: user.profile?.bio,
+      age: user.profile?.age,
+      gender: user.profile?.gender,
+      interestedIn: user.profile?.interestedIn,
+      interests: user.profile?.interests,
+      datingScore: user.datingScore,
+      socialScore: user.socialScore,
+      traderScore: user.traderScore,
+      overallLevel: user.overallLevel,
+      verificationScore: user.verificationScore,
+      badges: user.badges,
+    };
   }
 }

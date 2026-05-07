@@ -21,7 +21,7 @@ import { GamificationModule } from './modules/gamification/gamification.module';
 import { GiftsModule } from './modules/gifts/gifts.module';
 import { InteractionsModule } from './modules/interactions/interactions.module';
 import { TradingModule } from './modules/trading/trading.module';
-import { ProfilesModule } from './modules/profiles/profiles.module';
+import { SkillsModule } from './modules/skills/skills.module';
 import { HealthController } from './common/health.controller';
 
 @Module({
@@ -79,7 +79,7 @@ import { HealthController } from './common/health.controller';
     GiftsModule,
     InteractionsModule,
     TradingModule,
-    ProfilesModule,
+    SkillsModule,
     SocialModule,
   ],
   controllers: [HealthController],

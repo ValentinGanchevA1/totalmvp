@@ -514,7 +514,10 @@ export async function enqueueMessage(m: PendingMessage) {
 // backend: src/listings/listings.controller.ts
 @Post(':id/checkout')
 @UseGuards(JwtGuard)
-async checkout(@Param('id') id: string, @CurrentUser() me: User) {
+async checkout(
+  @Param('id') id: string,
+  @CurrentUser() me: User,
+) {
   const listing = await this.listings.requireActive(id);
   const intent = await this.stripe.paymentIntents.create({
     amount: listing.priceCents,

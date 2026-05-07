@@ -1,23 +1,26 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 
 @Injectable()
-export class EmailService {
+export class EmailService implements OnModuleInit {
   private transporter: nodemailer.Transporter | null = null;
   private sendgrid: any = null;
 
-  constructor(private configService: ConfigService) {
+  constructor(private configService: ConfigService) {}
+
+  async onModuleInit(): Promise<void> {
     const sendgridApiKey = this.configService.get<string>('SENDGRID_API_KEY');
 
     if (sendgridApiKey) {
-      import('@sendgrid/mail').then((sg) => {
+      try {
+        const sg = await import('@sendgrid/mail');
         this.sendgrid = sg.default;
         this.sendgrid.setApiKey(sendgridApiKey);
-      }).catch(() => {
+      } catch {
         console.warn('SendGrid not installed, falling back to SMTP');
         this.setupSmtp();
-      });
+      }
     } else {
       this.setupSmtp();
     }
@@ -34,7 +37,18 @@ export class EmailService {
     });
   }
 
+  private escapeHtml(value: string): string {
+    return value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#x27;');
+  }
+
   async sendVerificationEmail(to: string, code: string, displayName: string): Promise<void> {
+    const safeName = this.escapeHtml(displayName);
+    const safeCode = this.escapeHtml(code);
     const html = `
       <!DOCTYPE html>
       <html>
@@ -51,9 +65,9 @@ export class EmailService {
         <body>
           <div class="container">
             <div class="logo">G88</div>
-            <p class="text">Hey ${displayName},</p>
+            <p class="text">Hey ${safeName},</p>
             <p class="text">Your verification code is:</p>
-            <div class="code">${code}</div>
+            <div class="code">${safeCode}</div>
             <p class="text">This code expires in 10 minutes.</p>
             <p class="text">If you didn't request this, please ignore this email.</p>
             <div class="footer">&copy; ${new Date().getFullYear()} G88. All rights reserved.</div>
@@ -71,6 +85,7 @@ export class EmailService {
   }
 
   async sendWelcomeEmail(to: string, displayName: string): Promise<void> {
+    const safeName = this.escapeHtml(displayName);
     const html = `
       <!DOCTYPE html>
       <html>
@@ -87,7 +102,7 @@ export class EmailService {
         <body>
           <div class="container">
             <div class="logo">G88</div>
-            <h1 class="title">Welcome, ${displayName}!</h1>
+            <h1 class="title">Welcome, ${safeName}!</h1>
             <p class="text">Your email is now verified. You've earned the email verification badge!</p>
             <p class="text">Complete more verifications to increase your trust score and get discovered by more people.</p>
             <a href="https://g88.app/verify" class="cta">Complete Your Profile</a>

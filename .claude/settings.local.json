@@ -15,7 +15,6 @@
       "PowerShell(java *)",
       "Bash(npm install *)",
       "Bash(mkdir -p /tmp/rn_scaffold)",
-      "Read(//tmp/**)",
       "Bash(npx @react-native-community/cli@20.0.0 init G88 --version 0.83.0 --skip-install --directory /tmp/rn_scaffold/G88)",
       "Bash(\"C:\\\\Users\\\\vganc\\\\AppData\\\\Local\\\\Android\\\\Sdk\\\\emulator\\\\emulator.exe\" -avd Medium_Phone_API_35 -no-snapshot-load)",
       "Bash(\"C:\\\\Users\\\\vganc\\\\AppData\\\\Local\\\\Android\\\\Sdk\\\\platform-tools\\\\adb.exe\" devices *)",
@@ -42,7 +41,17 @@
       "Bash(git check-ignore *)",
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
-      "mcp__ide__getDiagnostics"
+      "mcp__ide__getDiagnostics",
+      "Bash(git commit *)",
+      "Read(//mnt/c/Users/vganc/Documents/Claude/Projects/totalmvp/**)",
+      "Bash(git checkout *)",
+      "Bash(python3 *)",
+      "Bash(python *)",
+      "PowerShell(New-Item *)",
+      "PowerShell(Remove-Item *)",
+      "Bash(xargs grep -l \"profiles\")",
+      "Bash(npx tsc *)",
+      "Bash(npm test *)"
     ]
   }
 }
