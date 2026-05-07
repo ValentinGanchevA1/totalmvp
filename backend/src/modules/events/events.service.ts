@@ -2,7 +2,6 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { v4 as uuidv4 } from 'uuid';
 import {
   Event,
   EventStatus,
@@ -285,7 +284,7 @@ export class EventsService {
     }
 
     const options = dto.options.map((opt) => ({
-      id: uuidv4(),
+      id: crypto.randomUUID(),
       text: opt.text,
     }));
 
