@@ -54,6 +54,8 @@ export const MapScreen: React.FC = () => {
   const events = useAppSelector(selectFilteredEvents);
   const { isSending } = useAppSelector((state) => state.interactions);
 
+  const watchIdRef = useRef<number | null>(null);
+
   const requestLocationPermission = useCallback(async (): Promise<boolean> => {
     if (Platform.OS === 'ios') {
       const status = await Geolocation.requestAuthorization('whenInUse');
@@ -79,7 +81,7 @@ export const MapScreen: React.FC = () => {
   }, []);
 
   const startLocationTracking = useCallback(() => {
-    Geolocation.watchPosition(
+    watchIdRef.current = Geolocation.watchPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
         dispatch(updateLocation({ lat: latitude, lng: longitude }));
@@ -107,7 +109,12 @@ export const MapScreen: React.FC = () => {
     };
     init();
 
-    return () => Geolocation.stopObserving();
+    return () => {
+      if (watchIdRef.current !== null) {
+        Geolocation.clearWatch(watchIdRef.current);
+        watchIdRef.current = null;
+      }
+    };
   }, [requestLocationPermission, startLocationTracking]);
 
   const handleRegionChange = (region: Region) => {
