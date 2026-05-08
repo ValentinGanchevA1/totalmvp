@@ -2,6 +2,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { apiClient } from '../../api/client';
 import { ProfileFormData, ProfileStep, RelationshipGoal } from './types';
+import { logger } from '../../utils/logger';
 
 interface ProfileState {
   formData: ProfileFormData;
@@ -38,7 +39,7 @@ export const submitProfile = createAsyncThunk(
         .filter(p => p.uri)
         .map(p => p.uri);
 
-      console.log('submitProfile: Sending data:', {
+      logger.debug('submitProfile: Sending data:', {
         displayName: formData.displayName,
         age: formData.age,
         gender: formData.gender,
@@ -57,10 +58,10 @@ export const submitProfile = createAsyncThunk(
         location: formData.location, // Include location!
       });
 
-      console.log('submitProfile: Response:', data);
+      logger.debug('submitProfile: Response:', data);
       return data;
     } catch (error: any) {
-      console.error('submitProfile: Error:', error.response?.data || error.message);
+      logger.error('submitProfile: Error:', error.response?.data || error.message);
       return rejectWithValue(error.response?.data?.message || 'Profile creation failed');
     }
   }

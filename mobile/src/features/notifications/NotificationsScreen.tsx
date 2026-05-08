@@ -1,5 +1,5 @@
 // src/features/notifications/NotificationsScreen.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { apiClient } from '../../api/client';
 
 interface Notification {
   id: string;
@@ -112,15 +113,29 @@ const formatTime = (date: Date): string => {
   return `${days}d ago`;
 };
 
+const fetchNotifications = async (): Promise<Notification[]> => {
+  try {
+    const { data } = await apiClient.get('/notifications');
+    return data.map((n: any) => ({ ...n, timestamp: new Date(n.timestamp) }));
+  } catch {
+    return MOCK_NOTIFICATIONS;
+  }
+};
+
 export const NotificationsScreen: React.FC = () => {
   const navigation = useNavigation();
-  const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    fetchNotifications().then(setNotifications);
+  }, []);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    // TODO: Fetch notifications from API
-    setTimeout(() => setRefreshing(false), 1000);
+    const data = await fetchNotifications();
+    setNotifications(data);
+    setRefreshing(false);
   };
 
   const handleNotificationPress = (notification: Notification) => {

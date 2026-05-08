@@ -51,6 +51,9 @@ const chatSlice = createSlice({
     addMessage: (state, action: PayloadAction<Message>) => {
       state.messages.push(action.payload);
     },
+    removeMessage: (state, action: PayloadAction<string>) => {
+      state.messages = state.messages.filter((m) => m.id !== action.payload);
+    },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.isLoading = action.payload;
     },
@@ -65,6 +68,7 @@ export const {
   setCurrentChat,
   setMessages,
   addMessage,
+  removeMessage,
   setLoading,
   setError,
 } = chatSlice.actions;

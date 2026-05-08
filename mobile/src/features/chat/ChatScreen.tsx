@@ -9,22 +9,41 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
-import { useAppSelector } from '../../hooks/redux';
+import { useAppSelector, useAppDispatch } from '../../hooks/redux';
+import { addMessage, removeMessage } from './chatSlice';
+import { apiClient } from '../../api/client';
 
 export const ChatScreen: React.FC = () => {
   const [message, setMessage] = useState('');
+  const dispatch = useAppDispatch();
   const { messages, currentChat } = useAppSelector((state) => state.chat);
+  const currentUserId = useAppSelector((state) => state.auth.user?.id);
 
   const handleSend = () => {
-    if (message.trim()) {
-      // TODO: Dispatch send message action
-      setMessage('');
-    }
+    const trimmed = message.trim();
+    if (!trimmed || !currentChat || !currentUserId) return;
+    const optimistic = {
+      id: `local-${Date.now()}`,
+      senderId: currentUserId,
+      receiverId: currentChat.participantId,
+      content: trimmed,
+      timestamp: Date.now(),
+      read: false,
+    };
+    dispatch(addMessage(optimistic));
+    setMessage('');
+    apiClient
+      .post(`/chat/conversations/${currentChat.id}/messages`, { content: trimmed })
+      .catch(() => {
+        dispatch(removeMessage(optimistic.id));
+        Alert.alert('Send failed', 'Your message could not be sent. Please try again.');
+      });
   };
 
   const renderMessage = ({ item }: { item: any }) => {
-    const isOwn = item.senderId === 'currentUserId'; // TODO: Get from auth state
+    const isOwn = item.senderId === currentUserId;
     return (
       <View style={[styles.messageBubble, isOwn ? styles.ownMessage : styles.otherMessage]}>
         <Text style={styles.messageText}>{item.content}</Text>

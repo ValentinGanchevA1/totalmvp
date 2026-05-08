@@ -8,11 +8,13 @@ import {
   Modal,
   Animated,
   TouchableWithoutFeedback,
+  Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import LinearGradient from 'react-native-linear-gradient';
-import { useAppSelector } from '../hooks/redux';
+import { useAppSelector, useAppDispatch } from '../hooks/redux';
+import { toggleVisibility } from '../features/auth/authSlice';
 
 interface ActionItem {
   icon: string;
@@ -25,6 +27,7 @@ interface ActionItem {
 
 export const ActionHub: React.FC = () => {
   const navigation = useNavigation();
+  const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
   const [visible, setVisible] = useState(false);
   const [scaleAnim] = useState(new Animated.Value(0));
@@ -58,8 +61,8 @@ export const ActionHub: React.FC = () => {
     }, 200);
   };
 
-  const toggleVisibility = () => {
-    // TODO: Dispatch action to toggle visibility
+  const handleToggleVisibility = () => {
+    dispatch(toggleVisibility());
     closeModal();
   };
 
@@ -83,16 +86,14 @@ export const ActionHub: React.FC = () => {
       label: 'Go Live',
       description: 'Start a live broadcast',
       color: '#9B59B6',
-      onPress: () => {
-        // TODO: Implement live streaming
-      },
+      onPress: () => Alert.alert('Coming Soon', 'Live streaming will be available in a future update.'),
     },
     {
       icon: isVisible ? 'eye-off' : 'eye',
       label: isVisible ? 'Go Invisible' : 'Go Visible',
       description: isVisible ? 'Hide from map & discovery' : 'Appear on map & discovery',
       color: isVisible ? '#95A5A6' : '#2ECC71',
-      onPress: toggleVisibility,
+      onPress: handleToggleVisibility,
     },
   ];
 

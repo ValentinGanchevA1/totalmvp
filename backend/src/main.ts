@@ -31,20 +31,16 @@ async function bootstrap() {
   );
 
   // CORS configuration
-  const allowedOrigins =
+  // In production set CORS_ORIGINS to a comma-separated list of allowed origins.
+  // This avoids requiring a code deploy to whitelist a new domain.
+  const defaultOrigins =
     'production' === process.env.NODE_ENV
-      ? [
-          'https://g88.app',
-          'https://www.g88.app',
-          'capacitor://localhost', // Capacitor iOS
-          'ionic://localhost', // Capacitor Android
-          'http://localhost', // Capacitor general
-        ]
-      : [
-          'http://localhost:3000',
-          'http://localhost:8081',
-          'http://10.0.2.2:8081', // Android emulator
-        ];
+      ? ['https://g88.app', 'https://www.g88.app', 'capacitor://localhost', 'ionic://localhost', 'http://localhost']
+      : ['http://localhost:3000', 'http://localhost:8081', 'http://10.0.2.2:8081'];
+
+  const allowedOrigins = process.env.CORS_ORIGINS
+    ? process.env.CORS_ORIGINS.split(',').map((o) => o.trim())
+    : defaultOrigins;
 
   app.enableCors({
     origin: allowedOrigins,
