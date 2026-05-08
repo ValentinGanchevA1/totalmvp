@@ -116,7 +116,7 @@ const formatTime = (date: Date): string => {
 const fetchNotifications = async (): Promise<Notification[]> => {
   try {
     const { data } = await apiClient.get('/notifications');
-    return data;
+    return data.map((n: any) => ({ ...n, timestamp: new Date(n.timestamp) }));
   } catch {
     return MOCK_NOTIFICATIONS;
   }

@@ -9,9 +9,10 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
 import { useAppSelector, useAppDispatch } from '../../hooks/redux';
-import { addMessage } from './chatSlice';
+import { addMessage, removeMessage } from './chatSlice';
 import { apiClient } from '../../api/client';
 
 export const ChatScreen: React.FC = () => {
@@ -33,7 +34,12 @@ export const ChatScreen: React.FC = () => {
     };
     dispatch(addMessage(optimistic));
     setMessage('');
-    apiClient.post(`/chat/conversations/${currentChat.id}/messages`, { content: trimmed }).catch(() => {});
+    apiClient
+      .post(`/chat/conversations/${currentChat.id}/messages`, { content: trimmed })
+      .catch(() => {
+        dispatch(removeMessage(optimistic.id));
+        Alert.alert('Send failed', 'Your message could not be sent. Please try again.');
+      });
   };
 
   const renderMessage = ({ item }: { item: any }) => {

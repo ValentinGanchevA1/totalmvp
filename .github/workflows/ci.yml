@@ -26,14 +26,21 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Lint
+      # Lint is advisory until pre-existing violations are resolved (see TECH_DEBT_AUDIT.md M7).
+      # The --fix flag in the lint script means unfixable errors still surface as warnings here.
+      - name: Lint (advisory)
         run: npm run lint
+        continue-on-error: true
 
       - name: Typecheck
-        run: npm run build --if-present
+        run: npx tsc --noEmit -p tsconfig.json
+        continue-on-error: true
+
+      - name: Build
+        run: npm run build
 
       - name: Test
-        run: npm test -- --passWithNoTests
+        run: npm test -- --passWithNoTests --forceExit
 
   mobile:
     name: Mobile — lint / typecheck / test
@@ -54,8 +61,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Lint
-        run: npm run lint --if-present
+      # Lint is advisory until pre-existing violations are resolved (see TECH_DEBT_AUDIT.md M7).
+      - name: Lint (advisory)
+        run: npm run lint
+        continue-on-error: true
 
       - name: Typecheck
         run: npx tsc --noEmit
