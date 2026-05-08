@@ -142,8 +142,9 @@ export class UsersService {
 
     // Replace or add at position
     if (position < photos.length) {
-      // Delete old photo from S3
-      await this.s3Service.delete(photos[position]);
+      // Delete old photo from S3 — extract key from the stored URL
+      const oldKey = new URL(photos[position]).pathname.slice(1);
+      await this.s3Service.delete(oldKey);
       photos[position] = url;
     } else {
       photos.push(url);
@@ -170,8 +171,9 @@ export class UsersService {
       throw new BadRequestException('Photo not found');
     }
 
-    // Delete from S3
-    await this.s3Service.delete(photos[position]);
+    // Delete from S3 — extract key from the stored URL
+    const keyToDelete = new URL(photos[position]).pathname.slice(1);
+    await this.s3Service.delete(keyToDelete);
 
     // Remove from array
     photos.splice(position, 1);

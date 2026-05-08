@@ -24,7 +24,7 @@ const initialFormData: ProfileFormData = {
   interestedIn: null,
   interests: [],
   goals: [],
-  photos: Array(6).fill({ uri: null, isUploading: false, uploadProgress: 0 }),
+  photos: Array.from({ length: 6 }, () => ({ uri: null, isUploading: false, uploadProgress: 0 })),
 };
 
 export const submitProfile = createAsyncThunk(

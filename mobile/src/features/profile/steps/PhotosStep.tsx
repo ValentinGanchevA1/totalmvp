@@ -1,5 +1,5 @@
 // src/features/profile/steps/PhotosStep.tsx
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Image,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { useAppDispatch, useAppSelector } from '../../../hooks/redux';
@@ -20,10 +21,13 @@ interface Props {
 export const PhotosStep: React.FC<Props> = ({ onNext, onBack }) => {
   const dispatch = useAppDispatch();
   const { formData } = useAppSelector((state) => state.profile);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const hasAtLeastOnePhoto = formData.photos.some((p) => p.uri);
 
   const handleSelectPhoto = async (position: number) => {
+    setUploadError(null);
+
     const result = await launchImageLibrary({
       mediaType: 'photo',
       quality: 0.8,
@@ -31,8 +35,24 @@ export const PhotosStep: React.FC<Props> = ({ onNext, onBack }) => {
       maxHeight: 1200,
     });
 
+    if (result.didCancel) return;
+    if (result.errorCode) {
+      if (result.errorCode === 'permission') {
+        Alert.alert(
+          'Permission Required',
+          'Please allow photo access in your device Settings to upload photos.',
+        );
+      } else {
+        setUploadError(result.errorMessage || 'Could not open photo library');
+      }
+      return;
+    }
+
     if (result.assets?.[0]?.uri) {
-      dispatch(uploadPhoto({ uri: result.assets[0].uri, position }));
+      const action = await dispatch(uploadPhoto({ uri: result.assets[0].uri, position }));
+      if (uploadPhoto.rejected.match(action)) {
+        setUploadError('Upload failed. Check your connection and try again.');
+      }
     }
   };
 
@@ -79,6 +99,10 @@ export const PhotosStep: React.FC<Props> = ({ onNext, onBack }) => {
           </TouchableOpacity>
         ))}
       </View>
+
+      {uploadError && (
+        <Text style={styles.errorText}>{uploadError}</Text>
+      )}
 
       <Text style={styles.tip}>
         💡 Tip: Profiles with 3+ photos get 5x more matches
@@ -178,6 +202,13 @@ const styles = StyleSheet.create({
   progressText: {
     color: '#00d4ff',
     marginTop: 8,
+  },
+  errorText: {
+    color: '#ff4444',
+    fontSize: 14,
+    textAlign: 'center',
+    marginTop: 12,
+    paddingHorizontal: 8,
   },
   tip: {
     color: '#888',

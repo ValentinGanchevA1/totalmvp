@@ -1,12 +1,13 @@
 // src/navigation/AppNavigator.tsx
-import React, { useState, useCallback } from 'react';
-import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState, useCallback, useEffect } from 'react';
+import { View, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import LinearGradient from 'react-native-linear-gradient';
-import { useAppSelector } from '../hooks/redux';
+import { useAppSelector, useAppDispatch } from '../hooks/redux';
+import { restoreSession } from '../features/auth/authSlice';
 
 // Navigation types
 export type RootStackParamList = {
@@ -383,8 +384,22 @@ const ActionHubModal: React.FC<{ visible: boolean; onClose: () => void }> = ({
 };
 
 export const AppNavigator: React.FC = () => {
+  const dispatch = useAppDispatch();
   const { isAuthenticated, user } = useAppSelector((state) => state.auth);
+  const [isInitializing, setIsInitializing] = useState(true);
   const needsProfileSetup = isAuthenticated && !user?.profile?.completedAt;
+
+  useEffect(() => {
+    dispatch(restoreSession()).finally(() => setIsInitializing(false));
+  }, [dispatch]);
+
+  if (isInitializing) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#0a0a0f', justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator color="#00d4ff" size="large" />
+      </View>
+    );
+  }
 
   return (
     <NavigationContainer>

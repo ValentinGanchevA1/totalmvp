@@ -51,7 +51,14 @@
       "PowerShell(Remove-Item *)",
       "Bash(xargs grep -l \"profiles\")",
       "Bash(npx tsc *)",
-      "Bash(npm test *)"
+      "Bash(npm test *)",
+      "Bash(dir \"C:\\\\Users\\\\vganc\\\\Documents\\\\Claude\\\\Projects\\\\totalmvp\\\\backend\\\\src\")",
+      "Bash(git push *)",
+      "Bash(Test-Path \"C:\\\\Users\\\\vganc\\\\Documents\\\\Claude\\\\Projects\\\\totalmvp\\\\mobile\\\\node_modules\\\\react-native\")",
+      "Bash(Write-Output \"EXISTS\")",
+      "Bash(Write-Output \"MISSING\")",
+      "Bash(Get-ChildItem -Recurse -Depth 2)",
+      "Bash(Select-Object FullName)"
     ]
   }
 }
