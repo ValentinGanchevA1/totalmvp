@@ -12,7 +12,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useAppDispatch } from '../../hooks/redux';
-import { logout } from '../auth/authSlice';
+import { logout, deleteAccount } from '../auth/authSlice';
 
 interface SettingItem {
   icon: string;
@@ -52,9 +52,11 @@ export const SettingsScreen: React.FC = () => {
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: () => {
-            // TODO: Implement account deletion
-            Alert.alert('Coming Soon', 'Account deletion will be available soon.');
+          onPress: async () => {
+            const result = await dispatch(deleteAccount());
+            if (deleteAccount.rejected.match(result)) {
+              Alert.alert('Error', 'Failed to delete account. Please try again.');
+            }
           },
         },
       ]

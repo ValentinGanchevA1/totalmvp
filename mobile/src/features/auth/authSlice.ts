@@ -58,6 +58,32 @@ export const fetchCurrentUser = createAsyncThunk(
   }
 );
 
+export const toggleVisibility = createAsyncThunk(
+  'auth/toggleVisibility',
+  async (_, { getState, rejectWithValue }) => {
+    try {
+      const { auth } = getState() as { auth: AuthState };
+      const newVisibility = !(auth.user?.isVisible ?? true);
+      await apiClient.patch('/users/me/visibility', { isVisible: newVisibility });
+      return newVisibility;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to update visibility');
+    }
+  }
+);
+
+export const deleteAccount = createAsyncThunk(
+  'auth/deleteAccount',
+  async (_, { rejectWithValue }) => {
+    try {
+      await apiClient.delete('/users/me');
+      await AsyncStorage.multiRemove(['accessToken', 'refreshToken']);
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to delete account');
+    }
+  }
+);
+
 export const restoreSession = createAsyncThunk(
   'auth/restoreSession',
   async (_, { dispatch, rejectWithValue }) => {
@@ -145,6 +171,15 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.isAuthenticated = false;
         state.user = null;
+      })
+      .addCase(toggleVisibility.fulfilled, (state, action) => {
+        if (state.user) {
+          state.user.isVisible = action.payload;
+        }
+      })
+      .addCase(deleteAccount.fulfilled, (state) => {
+        state.user = null;
+        state.isAuthenticated = false;
       });
   },
 });
