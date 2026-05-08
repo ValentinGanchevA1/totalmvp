@@ -88,9 +88,4 @@ Maps:
 
 ## Open architectural questions
 
-These are flagged in `TECH_DEBT_AUDIT.md` but worth surfacing here too:
-
-1. Two `email.service.ts` (in `common/` and `modules/common/`) — duplicate.
-2. Backend has a `users` *and* a `profiles` module with overlapping responsibilities.
-3. Migration folder has both `src/migrations` and an empty `src/srcmigrations` typo dir.
-4. `backend/dist/` is checked in alongside `src/` — build output in source control.
+1. `profiles-legacy.controller.ts` is untracked inside `src/modules/users/` — either commit it under the users module or delete it.
