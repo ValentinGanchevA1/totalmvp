@@ -53,7 +53,7 @@ export class UsersService {
 
     // Set location if provided
     if (dto.location) {
-      user.location = `POINT(${dto.location.lng} ${dto.location.lat})`;
+      user.location = `POINT(${Number(dto.location.lng)} ${Number(dto.location.lat)})`;
       // Also cache in Redis for fast geo queries
       await this.redis.geoAdd(
         'user:locations',
@@ -101,7 +101,7 @@ export class UsersService {
     if (dto.isVisible !== undefined) user.isVisible = dto.isVisible;
 
     if (dto.location) {
-      user.location = `POINT(${dto.location.lng} ${dto.location.lat})`;
+      user.location = `POINT(${Number(dto.location.lng)} ${Number(dto.location.lat)})`;
       await this.redis.geoAdd(
         'user:locations',
         dto.location.lng,
@@ -215,6 +215,24 @@ export class UsersService {
   async getPublicProfile(userId: string): Promise<UserProfileDto> {
     // Similar to getProfile, but might omit certain private fields in the future
     return this.getProfile(userId);
+  }
+
+  async setVisibility(userId: string, isVisible: boolean): Promise<{ isVisible: boolean }> {
+    await this.usersRepo.update(userId, { isVisible });
+    await this.cache.delete(`user:profile:${userId}`);
+    return { isVisible };
+  }
+
+  async deleteAccount(userId: string): Promise<void> {
+    const user = await this.usersRepo.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    // Soft delete: deactivate the account rather than hard-deleting rows
+    await this.usersRepo.update(userId, { isActive: false, isVisible: false });
+
+    // Remove from real-time geo index so the user disappears from the map
+    await this.redis.geoRemove('user:locations', userId);
+    await this.cache.delete(`user:profile:${userId}`);
   }
 
   async getProfileCompletionStatus(userId: string): Promise<ProfileCompletion> {

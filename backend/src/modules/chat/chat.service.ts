@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Conversation, ConversationType } from './entities/conversation.entity';
@@ -35,14 +35,19 @@ export class ChatService {
       return conversation;
     }
 
-    // Create new conversation
-    const user1 = await this.usersRepo.findOne({ where: { id: user1Id } });
-    const user2 = await this.usersRepo.findOne({ where: { id: user2Id } });
+    // Create new conversation — both users must exist
+    const [user1, user2] = await Promise.all([
+      this.usersRepo.findOne({ where: { id: user1Id } }),
+      this.usersRepo.findOne({ where: { id: user2Id } }),
+    ]);
+
+    if (!user1) throw new NotFoundException(`User ${user1Id} not found`);
+    if (!user2) throw new NotFoundException(`User ${user2Id} not found`);
 
     conversation = this.conversationsRepo.create({
       type: ConversationType.DIRECT,
-      participant1: user1 ?? undefined,
-      participant2: user2 ?? undefined,
+      participant1: user1,
+      participant2: user2,
     } as Partial<Conversation>);
 
     return this.conversationsRepo.save(conversation);
@@ -95,13 +100,22 @@ export class ChatService {
     type: MessageType = MessageType.TEXT,
     metadata?: any,
   ): Promise<Message> {
+    // Verify the conversation exists and sender is a participant in a single query
+    const conversation = await this.conversationsRepo
+      .createQueryBuilder('conv')
+      .where('conv.id = :conversationId', { conversationId })
+      .andWhere('(conv.participant1Id = :senderId OR conv.participant2Id = :senderId)', { senderId })
+      .getOne();
+
+    if (!conversation) {
+      throw new ForbiddenException('Conversation not found or access denied');
+    }
+
     const sender = await this.usersRepo.findOne({ where: { id: senderId } });
-    const conversation = await this.conversationsRepo.findOne({
-      where: { id: conversationId },
-    });
+    if (!sender) throw new NotFoundException('Sender not found');
 
     const message = this.messagesRepo.create({
-      conversation: conversation ?? undefined,
+      conversation,
       sender: sender ?? undefined,
       content,
       type,

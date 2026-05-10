@@ -37,14 +37,20 @@ export class LocationsService {
     latitude: number,
     longitude: number,
   ): Promise<{ success: boolean }> {
-    // Update in PostgreSQL with PostGIS
-    await this.usersRepository.update(userId, {
-      location: () => `ST_SetSRID(ST_MakePoint(${longitude}, ${latitude}), 4326)`,
-      lastLatitude: latitude,
-      lastLongitude: longitude,
-      lastLocationUpdate: new Date(),
-      lastSeenAt: new Date(),
-    });
+    // Update in PostgreSQL with PostGIS (parameterized to avoid injection)
+    await this.usersRepository
+      .createQueryBuilder()
+      .update()
+      .set({
+        location: () => 'ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)',
+        lastLatitude: latitude,
+        lastLongitude: longitude,
+        lastLocationUpdate: new Date(),
+        lastSeenAt: new Date(),
+      })
+      .where('id = :userId', { userId })
+      .setParameters({ lng: longitude, lat: latitude })
+      .execute();
 
     // Update in Redis for fast geo queries
     await this.redisService.geoAdd(GEO_KEY, longitude, latitude, userId);

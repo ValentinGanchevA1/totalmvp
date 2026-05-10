@@ -59,7 +59,11 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     client: Socket,
     payload: { recipientId: string; content: string; type: 'text' | 'image' | 'location' },
   ) {
-    const senderId = client.data.userId;
+    const senderId = client.data.userId as string | undefined;
+    if (!senderId) {
+      client.disconnect();
+      return;
+    }
 
     // Persist message
     const message = await this.chatService.createMessage({

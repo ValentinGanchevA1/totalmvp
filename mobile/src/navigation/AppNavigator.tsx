@@ -66,6 +66,8 @@ import { EventDetailScreen } from '../features/events/EventDetailScreen';
 // Stack Screens
 import { ChatScreen } from '../features/chat/ChatScreen';
 import { UserProfileScreen } from '../features/discovery/UserProfileScreen';
+import { LikesReceivedScreen } from '../features/discovery/LikesReceivedScreen';
+import { MatchesScreen } from '../features/discovery/MatchesScreen';
 import { ProfileCreationScreen } from '../features/profile/ProfileCreationScreen';
 import { ProfileEditScreen } from '../features/profile/ProfileEditScreen';
 import { VerificationScreen } from '../features/verification/VerificationScreen';
@@ -258,7 +260,7 @@ const ActionHubModal: React.FC<{ visible: boolean; onClose: () => void }> = ({
     }
   }, [visible, scaleAnim, fadeAnim]);
 
-  const handleClose = useCallback(() => {
+  const handleClose = useCallback((onFinished?: () => void) => {
     Animated.parallel([
       Animated.timing(scaleAnim, {
         toValue: 0,
@@ -270,14 +272,16 @@ const ActionHubModal: React.FC<{ visible: boolean; onClose: () => void }> = ({
         duration: 150,
         useNativeDriver: true,
       }),
-    ]).start(onClose);
+    ]).start(({ finished }) => {
+      if (finished) {
+        onClose();
+        onFinished?.();
+      }
+    });
   }, [scaleAnim, fadeAnim, onClose]);
 
   const handleAction = useCallback((route: string) => {
-    handleClose();
-    setTimeout(() => {
-      navigation.navigate(route as never);
-    }, 200);
+    handleClose(() => navigation.navigate(route as never));
   }, [handleClose, navigation]);
 
   const actions = [
@@ -321,7 +325,7 @@ const ActionHubModal: React.FC<{ visible: boolean; onClose: () => void }> = ({
       statusBarTranslucent
       onRequestClose={handleClose}
     >
-      <TouchableWithoutFeedback onPress={handleClose}>
+      <TouchableWithoutFeedback onPress={() => handleClose()}>
         <Animated.View style={[modalStyles.overlay, { opacity: fadeAnim }]}>
           <LinearGradient
             colors={['rgba(0,0,0,0.95)', 'rgba(10,10,15,0.98)']}
@@ -374,7 +378,7 @@ const ActionHubModal: React.FC<{ visible: boolean; onClose: () => void }> = ({
         </View>
 
         <Animated.View style={{ opacity: fadeAnim }}>
-          <TouchableOpacity style={modalStyles.closeButton} onPress={handleClose}>
+          <TouchableOpacity style={modalStyles.closeButton} onPress={() => handleClose()}>
             <Icon name="close" size={28} color="#fff" />
           </TouchableOpacity>
         </Animated.View>
@@ -532,6 +536,16 @@ export const AppNavigator: React.FC = () => {
             <Stack.Screen
               name="Notifications"
               component={NotificationsScreen}
+              options={{ presentation: 'card' }}
+            />
+            <Stack.Screen
+              name="LikesReceived"
+              component={LikesReceivedScreen}
+              options={{ presentation: 'card' }}
+            />
+            <Stack.Screen
+              name="Matches"
+              component={MatchesScreen}
               options={{ presentation: 'card' }}
             />
           </>

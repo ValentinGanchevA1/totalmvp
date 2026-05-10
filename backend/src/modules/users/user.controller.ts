@@ -12,6 +12,8 @@ import {
   UploadedFile,
   Query,
   ParseIntPipe,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -66,6 +68,20 @@ export class UsersController {
     @Param('position', ParseIntPipe) position: number,
   ) {
     return this.usersService.deleteProfilePhoto(userId, position);
+  }
+
+  @Patch('me/visibility')
+  async setVisibility(
+    @CurrentUser('id') userId: string,
+    @Body() body: { isVisible: boolean },
+  ) {
+    return this.usersService.setVisibility(userId, body.isVisible);
+  }
+
+  @Delete('me')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteAccount(@CurrentUser('id') userId: string) {
+    await this.usersService.deleteAccount(userId);
   }
 
   @Get(':id')

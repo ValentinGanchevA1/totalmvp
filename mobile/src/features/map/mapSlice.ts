@@ -203,9 +203,9 @@ const mapSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload as string;
       })
-      // Location update
-      .addCase(updateUserLocation.fulfilled, (state, action) => {
-        state.currentLocation = action.payload;
+      // Location update — currentLocation is already set by the sync updateLocation action;
+      // only record the timestamp here to confirm the server-side update succeeded
+      .addCase(updateUserLocation.fulfilled, (state) => {
         state.lastLocationUpdate = Date.now();
       })
       .addCase(updateUserLocation.rejected, (state, action) => {

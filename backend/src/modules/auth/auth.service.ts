@@ -3,6 +3,7 @@ import {
   UnauthorizedException,
   ConflictException,
   BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -108,23 +109,24 @@ export class AuthService {
   }
 
   async refreshToken(refreshToken: string): Promise<AuthResponseDto> {
+    let payload: { sub: string; email?: string; phone?: string };
     try {
-      const payload = this.jwtService.verify(refreshToken, {
+      payload = this.jwtService.verify(refreshToken, {
         secret: this.configService.get('JWT_REFRESH_SECRET'),
       });
-
-      const user = await this.usersRepository.findOne({
-        where: { id: payload.sub },
-      });
-
-      if (!user || !user.isActive || user.isBanned) {
-        throw new UnauthorizedException('Invalid refresh token');
-      }
-
-      return this.generateTokens(user);
-    } catch (error) {
+    } catch {
       throw new UnauthorizedException('Invalid refresh token');
     }
+
+    const user = await this.usersRepository.findOne({
+      where: { id: payload.sub },
+    });
+
+    if (!user || !user.isActive || user.isBanned) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    return this.generateTokens(user);
   }
 
   async getProfile(userId: string): Promise<Partial<User>> {
@@ -134,7 +136,7 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new UnauthorizedException('User not found');
+      throw new NotFoundException('User not found');
     }
 
     // Remove sensitive fields

@@ -59,7 +59,10 @@
       "Bash(Write-Output \"MISSING\")",
       "Bash(Get-ChildItem -Recurse -Depth 2)",
       "Bash(Select-Object FullName)",
-      "Bash(xargs grep -l \"s3Service\\\\|S3Service\")"
+      "Bash(xargs grep -l \"s3Service\\\\|S3Service\")",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\vganc\\\\Documents\\\\Claude\\\\Projects\\\\totalmvp\" -Force)",
+      "Bash(Select-Object Name, PSIsContainer)",
+      "Bash(Format-Table -AutoSize)"
     ]
   }
 }
