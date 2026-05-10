@@ -4,7 +4,7 @@ import { View, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppDispatch, useAppSelector } from '../../hooks/redux';
 import { setStep, submitProfile, validateStep } from './profileSlice';
-import { fetchCurrentUser } from '../auth/authSlice';
+import { updateUser } from '../auth/authSlice';
 import { ProfileStep } from './types';
 import { logger } from '../../utils/logger';
 
@@ -22,6 +22,7 @@ export const ProfileCreationScreen: React.FC = () => {
   const { currentStep, isSubmitting, error, ...profileState } = useAppSelector(
     (state) => state.profile
   );
+  const { user } = useAppSelector((state) => state.auth);
 
   const currentIndex = STEPS.indexOf(currentStep);
   const progress = ((currentIndex + 1) / STEPS.length) * 100;
@@ -38,16 +39,26 @@ export const ProfileCreationScreen: React.FC = () => {
       // Submit profile and refresh user data
       const result = await dispatch(submitProfile());
       logger.log('ProfileCreation: Submit result:', result);
+      
       if (submitProfile.fulfilled.match(result)) {
-        logger.log('ProfileCreation: Success, fetching user...');
-        // Refresh user to update profile.completedAt - triggers navigation
-        await dispatch(fetchCurrentUser());
-        logger.log('ProfileCreation: User fetched');
+        logger.log('ProfileCreation: Success, updating user state...');
+        
+        // Ensure we preserve the existing profile data while adding completedAt
+        if (user) {
+           dispatch(updateUser({ 
+              profile: { 
+                 ...user.profile, 
+                 completedAt: new Date().toISOString() 
+              } 
+           }));
+        }
+        
+        logger.log('ProfileCreation: User state updated');
       } else {
         logger.log('ProfileCreation: Submit failed:', result.payload);
       }
     }
-  }, [currentIndex, dispatch, profileState, currentStep]);
+  }, [currentIndex, dispatch, profileState, currentStep, user]);
 
   const goBack = useCallback(() => {
     if (currentIndex > 0) {
