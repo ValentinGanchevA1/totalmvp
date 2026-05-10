@@ -68,6 +68,23 @@ export class S3Service {
     );
   }
 
+  /**
+   * Extracts the S3 object key from a URL, validating it belongs to this bucket.
+   * Returns null if the URL is invalid, malformed, or points to a different host.
+   */
+  extractKey(url: string): string | null {
+    if (!url || typeof url !== 'string') return null;
+    try {
+      const parsed = new URL(url);
+      const expectedHost = `${this.bucket}.s3.${this.region}.amazonaws.com`;
+      if (parsed.hostname !== expectedHost) return null;
+      const key = parsed.pathname.slice(1); // remove leading /
+      return key || null;
+    } catch {
+      return null;
+    }
+  }
+
   async getSignedUrl(key: string, expiresIn = 3600): Promise<string> {
     if (!this.s3Client) {
       return this.getPublicUrl(key);

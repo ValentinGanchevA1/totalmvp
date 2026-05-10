@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { apiClient } from '../../api/client';
+import { logger } from '../../utils/logger';
 
 interface Achievement {
   id: string;
@@ -76,7 +77,7 @@ export const AchievementsScreen: React.FC = () => {
       setAchievements(allResponse.data);
       setUserAchievements(myResponse.data);
     } catch (error) {
-      console.error('Failed to fetch achievements:', error);
+      logger.error('Failed to fetch achievements:', error);
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);

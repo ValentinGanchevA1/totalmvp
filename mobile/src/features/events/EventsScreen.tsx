@@ -13,6 +13,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { apiClient } from '../../api/client';
+import { logger } from '../../utils/logger';
 
 interface Event {
   id: string;
@@ -78,7 +79,7 @@ export const EventsScreen: React.FC = () => {
       });
       setEvents(data);
     } catch (error) {
-      console.error('Failed to fetch events:', error);
+      logger.error('Failed to fetch events:', error);
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);

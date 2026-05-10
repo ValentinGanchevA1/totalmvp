@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { apiClient } from '../../api/client';
+import { logger } from '../../utils/logger';
 
 interface LeaderboardEntry {
   userId: string;
@@ -67,7 +68,7 @@ export const LeaderboardScreen: React.FC = () => {
       );
       setData(response);
     } catch (error) {
-      console.error('Failed to fetch leaderboard:', error);
+      logger.error('Failed to fetch leaderboard:', error);
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);

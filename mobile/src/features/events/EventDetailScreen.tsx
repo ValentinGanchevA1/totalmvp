@@ -13,6 +13,7 @@ import {
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { apiClient } from '../../api/client';
+import { logger } from '../../utils/logger';
 
 interface EventDetail {
   id: string;
@@ -80,7 +81,7 @@ export const EventDetailScreen: React.FC = () => {
       const { data } = await apiClient.get(`/events/${eventId}`);
       setEvent(data);
     } catch (error) {
-      console.error('Failed to fetch event:', error);
+      logger.error('Failed to fetch event:', error);
       // Alert.alert('Error', 'Failed to load event details'); // Suppress alert for now
     } finally {
       setIsLoading(false);

@@ -12,6 +12,7 @@ import {
 import Geolocation from 'react-native-geolocation-service';
 import { useAppDispatch, useAppSelector } from '../../../hooks/redux';
 import { updateFormData } from '../profileSlice';
+import { logger } from '../../../utils/logger';
 
 interface Props {
   onNext: () => void;
@@ -43,7 +44,7 @@ export const LocationStep: React.FC<Props> = ({ onNext, onBack, isSubmitting, er
             setLocationStatus('granted');
           },
           (locationError) => {
-            console.error('Location error:', locationError);
+            logger.error('Location error:', locationError);
             setLocationStatus('denied');
           },
           { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
@@ -65,7 +66,7 @@ export const LocationStep: React.FC<Props> = ({ onNext, onBack, isSubmitting, er
   };
 
   const handleComplete = () => {
-    console.log('LocationStep: handleComplete called');
+    logger.log('LocationStep: handleComplete called');
     onNext(); // This triggers submitProfile
   };
 

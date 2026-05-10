@@ -1,23 +1,19 @@
-// backend/src/modules/users/users.service.ts
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User, Gender } from './entities/user.entity';
-import { S3Service } from '../../common/s3.service';
+import { CreateProfileDto, UpdateProfileDto } from './dto/create-profile.dto';
+import { UserProfileDto } from './dto/user.dto';
 import { RedisService } from '../../common/redis.service';
 import { CacheService } from '../../common/cache.service';
-import { CreateProfileDto, UpdateProfileDto, Gender as DtoGender } from './dto/create-profile.dto';
-import { UserProfileDto } from './dto/user.dto';
+import { S3Service } from '../../common/s3.service';
 
 export interface ProfileCompletion {
-  steps: {
-    basicInfo: boolean;
-    bio: boolean;
-    photos: boolean;
-    interests: boolean;
-    location: boolean;
-    goals: boolean;
-  };
+  steps: Record<string, boolean>;
   percentage: number;
   isComplete: boolean;
   nextStep: string | null;
@@ -28,9 +24,9 @@ export class UsersService {
   constructor(
     @InjectRepository(User)
     private usersRepo: Repository<User>,
-    private s3Service: S3Service,
     private redis: RedisService,
     private cache: CacheService,
+    private s3Service: S3Service,
   ) {}
 
   async createProfile(userId: string, dto: CreateProfileDto): Promise<UserProfileDto> {
@@ -68,10 +64,10 @@ export class UsersService {
     }
 
     user.isVisible = dto.isVisible ?? true;
-    // user.profileCompletedAt = new Date(); // Removed as it's not in entity
 
     await this.usersRepo.save(user);
 
+    // Invalidate cache
     await this.cache.delete(`user:profile:${userId}`);
 
     return this.sanitizeUser(user);
@@ -90,6 +86,11 @@ export class UsersService {
     if (dto.interests !== undefined) profileUpdate.interests = dto.interests;
     if (dto.goals !== undefined) profileUpdate.goals = dto.goals as unknown as string[];
     if (dto.photoUrls !== undefined) profileUpdate.photoUrls = dto.photoUrls;
+
+    // Crucial: preserve completedAt when updating profile
+    if (user.profile?.completedAt) {
+      profileUpdate.completedAt = user.profile.completedAt;
+    }
 
     user.profile = {
       ...user.profile,
@@ -142,22 +143,27 @@ export class UsersService {
 
     // Replace or add at position
     if (position < photos.length) {
-      // Delete old photo from S3 — extract key from the stored URL
-      const oldKey = new URL(photos[position]).pathname.slice(1);
-      await this.s3Service.delete(oldKey);
+      const oldKey = this.s3Service.extractKey(photos[position]);
+      if (oldKey && oldKey.startsWith(`profiles/${userId}/`)) {
+        try {
+          await this.s3Service.delete(oldKey);
+        } catch (e) {
+          console.error('Failed to delete old photo:', e);
+        }
+      }
       photos[position] = url;
     } else {
       photos.push(url);
     }
 
-    user.profile = { ...user.profile, photoUrls: photos };
-
-    // Set first photo as avatar
-    if (position === 0 || !user.avatarUrl) {
+    // Set avatarUrl to first photo if it's position 0
+    if (position === 0) {
       user.avatarUrl = url;
     }
 
+    user.profile = { ...user.profile, photoUrls: photos };
     await this.usersRepo.save(user);
+    await this.cache.delete(`user:profile:${userId}`);
 
     return { url, position };
   }
@@ -165,26 +171,32 @@ export class UsersService {
   async deleteProfilePhoto(userId: string, position: number): Promise<void> {
     const user = await this.usersRepo.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
-    const photos = user.profile?.photoUrls || [];
 
+    const photos = user.profile?.photoUrls || [];
     if (position >= photos.length) {
-      throw new BadRequestException('Photo not found');
+      throw new BadRequestException('Invalid photo position');
     }
 
-    // Delete from S3 — extract key from the stored URL
-    const keyToDelete = new URL(photos[position]).pathname.slice(1);
-    await this.s3Service.delete(keyToDelete);
+    const url = photos[position];
+    const key = this.s3Service.extractKey(url);
 
-    // Remove from array
+    if (key && key.startsWith(`profiles/${userId}/`)) {
+      try {
+        await this.s3Service.delete(key);
+      } catch (e) {
+        console.error('Failed to delete photo from S3:', e);
+      }
+    }
+
     photos.splice(position, 1);
     user.profile = { ...user.profile, photoUrls: photos };
 
-    // Update avatar if needed
     if (position === 0) {
-      user.avatarUrl = photos[0] ?? undefined;
+      user.avatarUrl = photos[0] || null;
     }
 
     await this.usersRepo.save(user);
+    await this.cache.delete(`user:profile:${userId}`);
   }
 
   async getProfile(userId: string): Promise<UserProfileDto> {
@@ -198,6 +210,11 @@ export class UsersService {
     await this.cache.set(`user:profile:${userId}`, sanitized, 300);
 
     return sanitized;
+  }
+
+  async getPublicProfile(userId: string): Promise<UserProfileDto> {
+    // Similar to getProfile, but might omit certain private fields in the future
+    return this.getProfile(userId);
   }
 
   async getProfileCompletionStatus(userId: string): Promise<ProfileCompletion> {
@@ -224,12 +241,6 @@ export class UsersService {
     };
   }
 
-  async getPublicProfile(userId: string): Promise<UserProfileDto> {
-    const user = await this.usersRepo.findOne({ where: { id: userId } });
-    if (!user) throw new NotFoundException('User not found');
-    return this.sanitizeUser(user);
-  }
-
   private sanitizeUser(user: User): UserProfileDto {
     return {
       id: user.id,
@@ -248,6 +259,7 @@ export class UsersService {
       overallLevel: user.overallLevel,
       verificationScore: user.verificationScore,
       badges: user.badges,
+      completedAt: user.profile?.completedAt,
     };
   }
 }

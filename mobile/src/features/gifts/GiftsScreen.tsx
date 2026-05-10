@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { apiClient } from '../../api/client';
+import { logger } from '../../utils/logger';
 
 interface Gift {
   id: string;
@@ -84,7 +85,7 @@ export const GiftsScreen: React.FC = () => {
       setReceivedGifts(receivedRes.data);
       setSentGifts(sentRes.data);
     } catch (error) {
-      console.error('Failed to fetch gifts data:', error);
+      logger.error('Failed to fetch gifts data:', error);
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);

@@ -20,6 +20,7 @@ import { CategoryMarker } from './components/CategoryMarker';
 import { EventMarker } from './components/EventMarker';
 import { EventQuickInfo } from './components/EventQuickInfo';
 import { QuickActionMenu } from './components/QuickActionMenu';
+import { logger } from '../../utils/logger';
 
 const { width, height } = Dimensions.get('window');
 
@@ -75,7 +76,7 @@ export const MapScreen: React.FC = () => {
       );
       return granted === PermissionsAndroid.RESULTS.GRANTED;
     } catch (err) {
-      if (__DEV__) console.warn(err);
+      logger.warn(err);
       return false;
     }
   }, []);
@@ -89,7 +90,7 @@ export const MapScreen: React.FC = () => {
         dispatch(fetchMapData({ lat: latitude, lng: longitude, radius: 5 }));
       },
       (error) => {
-        if (__DEV__) console.error('Location error:', error);
+        logger.error('Location error:', error);
       },
       {
         enableHighAccuracy: true,

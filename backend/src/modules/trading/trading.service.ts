@@ -209,15 +209,15 @@ export class TradingService {
       throw new ForbiddenException('Only the seller can delete this listing');
     }
 
-    // Delete photos from S3
+    // Delete photos from S3 — best-effort, never blocks DB update
     for (const photo of listing.photos) {
-      try {
-        const key = this.extractS3Key(photo);
-        if (key) {
+      const key = this.s3Service.extractKey(photo);
+      if (key) {
+        try {
           await this.s3Service.delete(key);
+        } catch {
+          // Continue even if S3 delete fails
         }
-      } catch {
-        // Continue even if S3 delete fails
       }
     }
 
@@ -245,15 +245,6 @@ export class TradingService {
 
     const key = `trading/${userId}/${Date.now()}.jpg`;
     return this.s3Service.upload(file.buffer, key, file.mimetype);
-  }
-
-  private extractS3Key(url: string): string | null {
-    try {
-      const urlObj = new URL(url);
-      return urlObj.pathname.substring(1); // Remove leading /
-    } catch {
-      return null;
-    }
   }
 
   // ═══════════════════════════════════════════════════════════════════════

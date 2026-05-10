@@ -17,4 +17,5 @@ export class UserProfileDto {
   overallLevel?: number;
   verificationScore?: number;
   badges?: any;
+  completedAt?: string;
 }

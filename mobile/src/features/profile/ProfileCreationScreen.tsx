@@ -6,6 +6,7 @@ import { useAppDispatch, useAppSelector } from '../../hooks/redux';
 import { setStep, submitProfile, validateStep } from './profileSlice';
 import { fetchCurrentUser } from '../auth/authSlice';
 import { ProfileStep } from './types';
+import { logger } from '../../utils/logger';
 
 import { ProgressBar } from './components/ProgressBar';
 import { BasicInfoStep } from './steps/BasicInfoStep';
@@ -33,17 +34,17 @@ export const ProfileCreationScreen: React.FC = () => {
     if (currentIndex < STEPS.length - 1) {
       dispatch(setStep(STEPS[currentIndex + 1]));
     } else {
-      console.log('ProfileCreation: Submitting profile...');
+      logger.log('ProfileCreation: Submitting profile...');
       // Submit profile and refresh user data
       const result = await dispatch(submitProfile());
-      console.log('ProfileCreation: Submit result:', result);
+      logger.log('ProfileCreation: Submit result:', result);
       if (submitProfile.fulfilled.match(result)) {
-        console.log('ProfileCreation: Success, fetching user...');
+        logger.log('ProfileCreation: Success, fetching user...');
         // Refresh user to update profile.completedAt - triggers navigation
         await dispatch(fetchCurrentUser());
-        console.log('ProfileCreation: User fetched');
+        logger.log('ProfileCreation: User fetched');
       } else {
-        console.log('ProfileCreation: Submit failed:', result.payload);
+        logger.log('ProfileCreation: Submit failed:', result.payload);
       }
     }
   }, [currentIndex, dispatch, profileState, currentStep]);

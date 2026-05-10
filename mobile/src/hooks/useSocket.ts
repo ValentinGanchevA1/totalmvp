@@ -6,6 +6,7 @@ import { useAppDispatch } from './redux';
 import { addMessage } from '../features/chat/chatSlice';
 import { updateNearbyUser, setUserOnline } from '../features/map/mapSlice';
 import { addReceivedWave } from '../features/interactions/interactionsSlice';
+import { logger } from '../utils/logger';
 
 // Use your local IP for physical device, 10.0.2.2 for emulator
 const DEV_SOCKET_URL = 'http://10.0.2.2:3001';
@@ -21,7 +22,7 @@ export const useSocket = () => {
   const connect = useCallback(async () => {
     const token = await AsyncStorage.getItem('accessToken');
     if (!token) {
-      console.log('No token found, skipping socket connection');
+      logger.log('No token found, skipping socket connection');
       return;
     }
 
@@ -43,16 +44,16 @@ export const useSocket = () => {
 
     // Connection events
     socketRef.current.on('connect', () => {
-      console.log('✅ Socket connected:', socketRef.current?.id);
+      logger.log('✅ Socket connected:', socketRef.current?.id);
       setIsConnected(true);
       setError(null);
       setReconnectAttempts(0);
     });
 
     socketRef.current.on('disconnect', (reason) => {
-      console.log('❌ Socket disconnected:', reason);
+      logger.log('❌ Socket disconnected:', reason);
       setIsConnected(false);
-      
+
       if (reason === 'io server disconnect') {
         // Server disconnected, reconnect manually
         socketRef.current?.connect();
@@ -60,57 +61,57 @@ export const useSocket = () => {
     });
 
     socketRef.current.on('connect_error', (err) => {
-      console.error('❌ Socket connection error:', err.message);
+      logger.error('❌ Socket connection error:', err.message);
       setError(err.message);
       setIsConnected(false);
     });
 
     socketRef.current.on('reconnect', (attemptNumber) => {
-      console.log(`🔄 Socket reconnected after ${attemptNumber} attempts`);
+      logger.log(`🔄 Socket reconnected after ${attemptNumber} attempts`);
       setIsConnected(true);
       setError(null);
       setReconnectAttempts(0);
     });
 
     socketRef.current.on('reconnect_attempt', (attemptNumber) => {
-      console.log(`🔄 Socket reconnection attempt ${attemptNumber}`);
+      logger.log(`🔄 Socket reconnection attempt ${attemptNumber}`);
       setReconnectAttempts(attemptNumber);
     });
 
     socketRef.current.on('reconnect_error', (err) => {
-      console.error('❌ Socket reconnection error:', err.message);
+      logger.error('❌ Socket reconnection error:', err.message);
       setError(err.message);
     });
 
     socketRef.current.on('reconnect_failed', () => {
-      console.error('❌ Socket reconnection failed completely');
+      logger.error('❌ Socket reconnection failed completely');
       setError('Failed to reconnect to server');
     });
 
     // Message events
     socketRef.current.on('message:receive', (message) => {
-      console.log('📩 Received message:', message);
+      logger.log('📩 Received message:', message);
       dispatch(addMessage(message));
     });
 
     socketRef.current.on('nearby:update', (data) => {
-      console.log('📍 Nearby user update:', data);
+      logger.log('📍 Nearby user update:', data);
       dispatch(updateNearbyUser(data));
     });
 
     socketRef.current.on('user:online', ({ userId }) => {
-      console.log('🟢 User online:', userId);
+      logger.log('🟢 User online:', userId);
       dispatch(setUserOnline(userId));
     });
 
     socketRef.current.on('wave:receive', (wave) => {
-      console.log('👋 Received wave:', wave);
+      logger.log('👋 Received wave:', wave);
       dispatch(addReceivedWave(wave));
     });
 
     // Error handling
     socketRef.current.on('error', (socketError) => {
-      console.error('Socket error:', socketError);
+      logger.error('Socket error:', socketError);
       setError(socketError.message || 'Unknown socket error');
     });
 
@@ -124,32 +125,32 @@ export const useSocket = () => {
       setIsConnected(false);
       setError(null);
       setReconnectAttempts(0);
-      console.log('Socket disconnected manually');
+      logger.log('Socket disconnected manually');
     }
   }, []);
 
   const sendMessage = useCallback((recipientId: string, content: string, type = 'text') => {
     if (!socketRef.current || !isConnected) {
-      console.error('Cannot send message: Socket not connected');
+      logger.error('Cannot send message: Socket not connected');
       return false;
     }
-    
+
     socketRef.current.emit('message:send', { recipientId, content, type });
     return true;
   }, [isConnected]);
 
   const updateLocation = useCallback((lat: number, lng: number) => {
     if (!socketRef.current || !isConnected) {
-      console.warn('Cannot update location: Socket not connected');
+      logger.warn('Cannot update location: Socket not connected');
       return false;
     }
-    
+
     socketRef.current.emit('location:update', { lat, lng });
     return true;
   }, [isConnected]);
 
   const reconnect = useCallback(() => {
-    console.log('Manual reconnection triggered');
+    logger.log('Manual reconnection triggered');
     disconnect();
     setTimeout(() => connect(), 1000);
   }, [connect, disconnect]);

@@ -390,7 +390,14 @@ export const AppNavigator: React.FC = () => {
   const needsProfileSetup = isAuthenticated && !user?.profile?.completedAt;
 
   useEffect(() => {
-    dispatch(restoreSession()).finally(() => setIsInitializing(false));
+    const init = async () => {
+      try {
+        await Promise.resolve(dispatch(restoreSession()));
+      } finally {
+        setIsInitializing(false);
+      }
+    };
+    init();
   }, [dispatch]);
 
   if (isInitializing) {
