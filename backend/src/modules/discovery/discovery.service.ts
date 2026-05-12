@@ -26,7 +26,7 @@ export class DiscoveryService {
     private matchesRepository: Repository<Match>,
   ) {}
 
-async getDiscoveryProfiles(userId: string, filters: DiscoveryFilters) {
+  async getDiscoveryProfiles(userId: string, filters: DiscoveryFilters) {
     const { minAge = 18, maxAge = 100, maxDistance = 100, skip = 0, limit = 10 } = filters;
 
     // Get user's current location
@@ -106,6 +106,44 @@ async getDiscoveryProfiles(userId: string, filters: DiscoveryFilters) {
     };
   }
 
+  // ─── Helper: Create or Get Match ───────────────────────────────────────
+  // Handles race conditions in concurrent requests by checking for existing
+  // match before attempting to create. IDs are normalized (smaller first) to
+  // ensure the unique index (user1Id, user2Id) prevents duplicates.
+
+  private async createOrGetMatch(
+    user1Id: string,
+    user2Id: string,
+  ): Promise<Match> {
+    // Normalize IDs so the unique index (user1Id, user2Id) prevents duplicates
+    const normalizedUser1Id = user1Id < user2Id ? user1Id : user2Id;
+    const normalizedUser2Id = user1Id < user2Id ? user2Id : user1Id;
+
+    // Check for existing match first (handles concurrent requests)
+    const existingMatch = await this.matchesRepository.findOne({
+      where: { user1Id: normalizedUser1Id, user2Id: normalizedUser2Id },
+      relations: ['user1', 'user2'],
+    });
+
+    if (existingMatch) {
+      return existingMatch;
+    }
+
+    // Create new match if it doesn't exist
+    const match = await this.matchesRepository.save({
+      user1Id: normalizedUser1Id,
+      user2Id: normalizedUser2Id,
+    });
+
+    // Load full match with relations
+    const fullMatch = await this.matchesRepository.findOne({
+      where: { id: match.id },
+      relations: ['user1', 'user2'],
+    });
+
+    return fullMatch!;
+  }
+
   async likeUser(swiperId: string, swipedId: string): Promise<{ matched: boolean; match?: Match }> {
     if (swiperId === swipedId) {
       throw new BadRequestException('Cannot like yourself');
@@ -136,23 +174,8 @@ async getDiscoveryProfiles(userId: string, filters: DiscoveryFilters) {
     });
 
     if (mutualLike) {
-      // Normalise IDs so the unique index (user1Id, user2Id) prevents duplicate matches
-      const user1Id = swiperId < swipedId ? swiperId : swipedId;
-      const user2Id = swiperId < swipedId ? swipedId : swiperId;
-
-      // Check for an existing match before saving to handle concurrent requests
-      const existingMatch = await this.matchesRepository.findOne({
-        where: { user1Id, user2Id },
-      });
-
-      const match = existingMatch ?? await this.matchesRepository.save({ user1Id, user2Id });
-
-      const fullMatch = await this.matchesRepository.findOne({
-        where: { id: match.id },
-        relations: ['user1', 'user2'],
-      });
-
-      return { matched: true, match: fullMatch || undefined };
+      const match = await this.createOrGetMatch(swiperId, swipedId);
+      return { matched: true, match };
     }
 
     return { matched: false };
@@ -205,21 +228,8 @@ async getDiscoveryProfiles(userId: string, filters: DiscoveryFilters) {
     });
 
     if (mutualLike) {
-      const user1Id = swiperId < swipedId ? swiperId : swipedId;
-      const user2Id = swiperId < swipedId ? swipedId : swiperId;
-
-      const existingMatch = await this.matchesRepository.findOne({
-        where: { user1Id, user2Id },
-      });
-
-      const match = existingMatch ?? await this.matchesRepository.save({ user1Id, user2Id });
-
-      const fullMatch = await this.matchesRepository.findOne({
-        where: { id: match.id },
-        relations: ['user1', 'user2'],
-      });
-
-      return { matched: true, match: fullMatch || undefined };
+      const match = await this.createOrGetMatch(swiperId, swipedId);
+      return { matched: true, match };
     }
 
     return { matched: false };
