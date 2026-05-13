@@ -41,14 +41,28 @@ export class S3Service {
 
     const { PutObjectCommand } = await import('@aws-sdk/client-s3');
 
-    await this.s3Client.send(
-      new PutObjectCommand({
-        Bucket: this.bucket,
-        Key: key,
-        Body: buffer,
-        ContentType: contentType,
-      }),
-    );
+    try {
+      await this.s3Client.send(
+        new PutObjectCommand({
+          Bucket: this.bucket,
+          Key: key,
+          Body: buffer,
+          ContentType: contentType,
+        }),
+      );
+    } catch (error: any) {
+      const isCredentialError =
+        error?.name === 'InvalidAccessKeyId' ||
+        error?.name === 'NoCredentialsError' ||
+        error?.Code === 'InvalidAccessKeyId' ||
+        error?.message?.includes('Access Key');
+
+      if (isCredentialError && process.env.NODE_ENV !== 'production') {
+        console.warn(`S3 credential error (dev): ${error.message} — returning mock URL`);
+        return this.getPublicUrl(key);
+      }
+      throw error;
+    }
 
     return this.getPublicUrl(key);
   }
@@ -60,12 +74,25 @@ export class S3Service {
 
     const { DeleteObjectCommand } = await import('@aws-sdk/client-s3');
 
-    await this.s3Client.send(
-      new DeleteObjectCommand({
-        Bucket: this.bucket,
-        Key: key,
-      }),
-    );
+    try {
+      await this.s3Client.send(
+        new DeleteObjectCommand({
+          Bucket: this.bucket,
+          Key: key,
+        }),
+      );
+    } catch (error: any) {
+      const isCredentialError =
+        error?.name === 'InvalidAccessKeyId' ||
+        error?.name === 'NoCredentialsError' ||
+        error?.Code === 'InvalidAccessKeyId';
+
+      if (isCredentialError && process.env.NODE_ENV !== 'production') {
+        console.warn(`S3 credential error (dev): ${error.message} — skipping delete`);
+        return;
+      }
+      throw error;
+    }
   }
 
   /**
