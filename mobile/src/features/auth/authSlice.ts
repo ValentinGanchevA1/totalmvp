@@ -156,15 +156,33 @@ const authSlice = createSlice({
         state.error = action.payload as string;
       })
       .addCase(fetchCurrentUser.fulfilled, (state, action) => {
-        state.user = action.payload;
+        // /users/me returns a flat UserProfileDto — remap to the nested User shape
+        const p = action.payload as any;
+        state.user = {
+          ...state.user,
+          ...p,
+          profile: {
+            ...(state.user?.profile ?? {}),
+            bio: p.bio,
+            age: p.age,
+            gender: p.gender,
+            interestedIn: p.interestedIn,
+            interests: p.interests,
+            goals: p.goals,
+            photoUrls: p.photoUrls,
+            completedAt: p.completedAt,
+          },
+        };
         state.isAuthenticated = true;
       })
       .addCase(restoreSession.pending, (state) => {
         state.isLoading = true;
       })
       .addCase(restoreSession.fulfilled, (state, action) => {
+        // restoreSession returns the same flat UserProfileDto as fetchCurrentUser.
+        // fetchCurrentUser.fulfilled already ran and set the nested shape; do NOT
+        // overwrite state.user here — just clear the loading flag.
         state.isLoading = false;
-        state.user = action.payload;
         state.isAuthenticated = true;
       })
       .addCase(restoreSession.rejected, (state) => {

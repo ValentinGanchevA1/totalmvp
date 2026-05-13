@@ -7,7 +7,8 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import { useAppSelector, useAppDispatch } from '../hooks/redux';
-import { restoreSession } from '../features/auth/authSlice';
+import { restoreSession, logout } from '../features/auth/authSlice';
+import { EventBus } from '../utils/eventBus';
 
 // Navigation types
 export type RootStackParamList = {
@@ -104,6 +105,10 @@ import { NotificationsScreen } from '../features/notifications/NotificationsScre
 import { withScreenErrorBoundary } from '../components/ScreenErrorBoundary';
 
 // Wrap critical screens with error boundaries
+const SafeMapScreen = withScreenErrorBoundary(MapScreen, 'Map');
+const SafeDiscoveryScreen = withScreenErrorBoundary(DiscoveryScreen, 'Discover');
+const SafeInboxScreen = withScreenErrorBoundary(InboxScreen, 'Inbox');
+const SafeProfileScreen = withScreenErrorBoundary(ProfileScreen, 'Profile');
 const SafeListingDetailScreen = withScreenErrorBoundary(ListingDetailScreen, 'Listing Details');
 const SafeCreateListingScreen = withScreenErrorBoundary(CreateListingScreen, 'Create Listing');
 const SafeOffersScreen = withScreenErrorBoundary(OffersScreen, 'Offers');
@@ -211,12 +216,12 @@ const MainTabs = () => {
           headerShown: false,
         }}
       >
-        <Tab.Screen name="Map" component={MapScreen} />
-        <Tab.Screen name="Discover" component={DiscoveryScreen} />
+        <Tab.Screen name="Map" component={SafeMapScreen} />
+        <Tab.Screen name="Discover" component={SafeDiscoveryScreen} />
         <Tab.Screen name="ActionHub" component={EmptyComponent} />
         <Tab.Screen name="Market" component={SafeMarketScreen} />
-        <Tab.Screen name="Inbox" component={InboxScreen} />
-        <Tab.Screen name="Profile" component={ProfileScreen} />
+        <Tab.Screen name="Inbox" component={SafeInboxScreen} />
+        <Tab.Screen name="Profile" component={SafeProfileScreen} />
       </Tab.Navigator>
 
       {/* Action Hub Modal */}
@@ -408,6 +413,15 @@ export const AppNavigator: React.FC = () => {
       }
     };
     init();
+  }, [dispatch]);
+
+  useEffect(() => {
+    // When the API client fails to refresh a token, it emits auth:logout.
+    // Dispatch the logout action so the navigator drops back to Auth.
+    const unsubscribe = EventBus.on('auth:logout', () => {
+      dispatch(logout());
+    });
+    return unsubscribe;
   }, [dispatch]);
 
   if (isInitializing) {

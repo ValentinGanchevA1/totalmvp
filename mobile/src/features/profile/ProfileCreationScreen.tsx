@@ -28,26 +28,47 @@ export const ProfileCreationScreen: React.FC = () => {
   const progress = ((currentIndex + 1) / STEPS.length) * 100;
 
   const goNext = useCallback(async () => {
-    // Validate current step before proceeding
-    const isValid = await dispatch(validateStep({ step: currentStep, data: profileState })).unwrap();
-    if (!isValid) return;
+    try {
+      const isValid = await dispatch(validateStep({ step: currentStep, data: profileState })).unwrap();
+      if (!isValid) return;
 
-    if (currentIndex < STEPS.length - 1) {
-      dispatch(setStep(STEPS[currentIndex + 1]));
-    } else {
+      if (currentIndex < STEPS.length - 1) {
+        dispatch(setStep(STEPS[currentIndex + 1]));
+        return;
+      }
+
       logger.log('ProfileCreation: Submitting profile...');
-      // Submit profile and refresh user data
       const result = await dispatch(submitProfile());
       logger.log('ProfileCreation: Submit result:', result);
-      
+
       if (submitProfile.fulfilled.match(result)) {
         logger.log('ProfileCreation: Success, updating user state...');
-        // Use server-returned profile so completedAt comes from the backend
-        dispatch(updateUser(result.payload));
+        // Map flat UserProfileDto back to the nested User shape the navigator expects.
+        // AppNavigator gates on user.profile.completedAt — must be nested, not top-level.
+        const p = result.payload as any;
+        dispatch(updateUser({
+          displayName: p.displayName,
+          avatarUrl: p.avatarUrl,
+          isVisible: p.isVisible,
+          subscriptionTier: p.subscriptionTier,
+          profile: {
+            ...user?.profile,
+            bio: p.bio,
+            age: p.age,
+            gender: p.gender,
+            interestedIn: p.interestedIn,
+            interests: p.interests,
+            goals: p.goals,
+            photoUrls: p.photoUrls,
+            completedAt: p.completedAt ?? new Date().toISOString(),
+          },
+        }));
         logger.log('ProfileCreation: User state updated');
       } else {
         logger.log('ProfileCreation: Submit failed:', result.payload);
       }
+    } catch (err) {
+      logger.error('ProfileCreation: goNext error:', err);
     }
   }, [currentIndex, dispatch, profileState, currentStep, user]);
 
