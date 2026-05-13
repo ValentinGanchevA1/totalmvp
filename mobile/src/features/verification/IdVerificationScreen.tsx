@@ -16,6 +16,7 @@ import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 import { apiClient } from '../../api/client';
 import { useAppDispatch } from '../../hooks/redux';
 import { fetchVerificationStatus } from './verificationSlice';
+import { logger } from '../../utils/logger';
 
 export const IdVerificationScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -63,7 +64,7 @@ export const IdVerificationScreen: React.FC = () => {
         }
       }
     } catch (error) {
-      console.error('Image capture error:', error);
+      logger.error('Image capture error:', error instanceof Error ? error.message : String(error));
     }
   };
 

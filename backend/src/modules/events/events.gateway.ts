@@ -8,6 +8,7 @@ import {
   ConnectedSocket,
   MessageBody,
 } from '@nestjs/websockets';
+import { Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
 
@@ -28,6 +29,8 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private socketUsers = new Map<string, string>(); // socketId -> userId
   private eventRooms = new Map<string, Set<string>>(); // eventId -> Set of userIds
 
+  private readonly logger = new Logger(EventsGateway.name);
+
   constructor(private readonly jwtService: JwtService) {}
 
   async handleConnection(client: Socket) {
@@ -47,7 +50,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // Join user's personal room for notifications
       client.join(`user:${userId}`);
 
-      console.log(`Events: User ${userId} connected`);
+      this.logger.log(`User ${userId} connected`);
     } catch (error) {
       client.disconnect();
     }
@@ -67,7 +70,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
         }
       });
 
-      console.log(`Events: User ${userId} disconnected`);
+      this.logger.log(`User ${userId} disconnected`);
     }
   }
 

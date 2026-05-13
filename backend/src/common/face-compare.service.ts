@@ -1,5 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import type { RekognitionClient as RekognitionClientType } from '@aws-sdk/client-rekognition';
 
 export interface FaceCompareResult {
   confidence: number;
@@ -8,7 +9,8 @@ export interface FaceCompareResult {
 
 @Injectable()
 export class FaceCompareService {
-  private rekognitionClient: any;
+  private readonly logger = new Logger(FaceCompareService.name);
+  private rekognitionClient: RekognitionClientType | null = null;
 
   constructor(private configService: ConfigService) {
     const region = this.configService.get<string>('AWS_REGION');
@@ -25,21 +27,20 @@ export class FaceCompareService {
           },
         });
       }).catch(() => {
-        console.warn('AWS Rekognition SDK not installed, face comparison disabled');
+        this.logger.warn('AWS Rekognition SDK unavailable — face comparison disabled');
       });
     }
   }
 
   async compare(sourceUrl: string, targetUrl: string): Promise<FaceCompareResult> {
     if (!this.rekognitionClient) {
-      console.warn('Rekognition not configured, returning mock result');
-      return { confidence: 0.9, matched: true };
+      this.logger.warn('Rekognition not configured — skipping face comparison');
+      return { confidence: 0, matched: false };
     }
 
     try {
       const { CompareFacesCommand } = await import('@aws-sdk/client-rekognition');
 
-      // Fetch images from URLs
       const [sourceBuffer, targetBuffer] = await Promise.all([
         this.fetchImage(sourceUrl),
         this.fetchImage(targetUrl),
@@ -63,7 +64,7 @@ export class FaceCompareService {
 
       return { confidence: 0, matched: false };
     } catch (error) {
-      console.error('Face comparison failed:', error);
+      this.logger.error('Face comparison failed', error);
       return { confidence: 0, matched: false };
     }
   }

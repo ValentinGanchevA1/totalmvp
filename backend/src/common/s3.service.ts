@@ -1,9 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import type { S3Client as S3ClientType } from '@aws-sdk/client-s3';
 
 @Injectable()
 export class S3Service {
-  private s3Client: any;
+  private readonly logger = new Logger(S3Service.name);
+  private s3Client: S3ClientType | null = null;
   private bucket: string;
   private region: string;
 
@@ -24,7 +26,7 @@ export class S3Service {
           },
         });
       }).catch(() => {
-        console.warn('AWS SDK not installed, S3 functionality disabled');
+        this.logger.warn('AWS S3 SDK unavailable — S3 functionality disabled');
       });
     }
   }
@@ -35,7 +37,7 @@ export class S3Service {
 
   async upload(buffer: Buffer, key: string, contentType = 'image/jpeg'): Promise<string> {
     if (!this.s3Client) {
-      console.warn('S3 not configured, returning mock URL');
+      this.logger.warn('S3 not configured — returning public URL without upload');
       return this.getPublicUrl(key);
     }
 

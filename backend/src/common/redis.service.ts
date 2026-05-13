@@ -1,9 +1,10 @@
-import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 
 @Injectable()
 export class RedisService implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(RedisService.name);
   private client: Redis;
 
   constructor(private configService: ConfigService) {}
@@ -16,11 +17,11 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     });
 
     this.client.on('error', (err) => {
-      console.error('Redis connection error:', err);
+      this.logger.error('Redis connection error', err);
     });
 
     this.client.on('connect', () => {
-      console.log('Redis connected');
+      this.logger.log('Redis connected');
     });
   }
 
@@ -44,7 +45,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     radius: number,
     unit: 'km' | 'm' = 'km',
     options: { withDist?: boolean; count?: number } = {},
-  ): Promise<any[]> {
+  ): Promise<Array<string | [string, string]>> {
     const args: (string | number)[] = [longitude, latitude, radius, unit];
 
     if (options.withDist) {
@@ -57,7 +58,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 
     args.push('ASC');
 
-    return this.client.call('GEORADIUS', key, ...args) as Promise<any[]>;
+    return this.client.call('GEORADIUS', key, ...args) as Promise<Array<string | [string, string]>>;
   }
 
   async geoRemove(key: string, member: string): Promise<number> {
@@ -102,7 +103,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     return this.client.zincrby(key, increment, member);
   }
 
-  async zRevRange(key: string, start: number, stop: number, withScores?: string): Promise<string[]> {
+  async zRevRange(key: string, start: number, stop: number, withScores?: 'WITHSCORES'): Promise<string[]> {
     if (withScores === 'WITHSCORES') {
       return this.client.zrevrange(key, start, stop, 'WITHSCORES');
     }

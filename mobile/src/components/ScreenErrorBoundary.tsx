@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { logger } from '../utils/logger';
 
 interface ScreenErrorBoundaryProps {
   children: ReactNode;
@@ -90,8 +91,8 @@ export class ScreenErrorBoundary extends Component<
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    console.error(`ScreenErrorBoundary [${this.props.screenName}]:`, error);
-    console.error('Component stack:', errorInfo.componentStack);
+    logger.error(`ScreenErrorBoundary [${this.props.screenName ?? 'unknown'}]:`, error.message);
+    logger.error('Component stack:', errorInfo.componentStack ?? '');
 
     this.props.onError?.(error, errorInfo);
   }

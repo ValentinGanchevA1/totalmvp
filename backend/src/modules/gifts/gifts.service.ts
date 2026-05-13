@@ -1,6 +1,7 @@
 // src/modules/gifts/gifts.service.ts
 import {
   Injectable,
+  Logger,
   NotFoundException,
   BadRequestException,
   ForbiddenException,
@@ -32,6 +33,7 @@ const COIN_PACKAGES = [
 
 @Injectable()
 export class GiftsService {
+  private readonly logger = new Logger(GiftsService.name);
   private stripe: Stripe;
 
   constructor(
@@ -150,7 +152,7 @@ export class GiftsService {
     const totalCoins = parseInt(coins, 10) + parseInt(bonusCoins, 10);
 
     await this.addCoins(userId, totalCoins);
-    console.log(`Added ${totalCoins} coins to user ${userId}`);
+    this.logger.log(`Added ${totalCoins} coins to user ${userId}`);
   }
 
   // ==================== SENDING GIFTS ====================

@@ -1,5 +1,5 @@
 // backend/src/modules/payments/payments.service.ts
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import Stripe from 'stripe';
@@ -7,6 +7,7 @@ import { User } from '../users/entities/user.entity';
 
 @Injectable()
 export class PaymentsService {
+  private readonly logger = new Logger(PaymentsService.name);
   private stripe: Stripe;
 
   constructor(
@@ -90,7 +91,7 @@ export class PaymentsService {
   private async handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent): Promise<void> {
     const userId = paymentIntent.metadata.userId;
     if (userId) {
-      console.log(`Payment succeeded for user ${userId}:`, paymentIntent.id);
+      this.logger.log(`Payment succeeded for user ${userId}: ${paymentIntent.id}`);
       // Add any post-payment logic here (e.g., update user subscription status)
     }
   }
@@ -104,7 +105,7 @@ export class PaymentsService {
     });
 
     if (user) {
-      console.log(`Subscription updated for user ${user.id}:`, subscription.status);
+      this.logger.log(`Subscription updated for user ${user.id}: ${subscription.status}`);
       // Update user subscription tier based on subscription status
       // This would depend on your business logic
     }

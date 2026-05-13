@@ -1,11 +1,13 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
+import type { MailService } from '@sendgrid/mail';
 
 @Injectable()
 export class EmailService implements OnModuleInit {
+  private readonly logger = new Logger(EmailService.name);
   private transporter: nodemailer.Transporter | null = null;
-  private sendgrid: any = null;
+  private sendgrid: MailService | null = null;
 
   constructor(private configService: ConfigService) {}
 
@@ -18,7 +20,7 @@ export class EmailService implements OnModuleInit {
         this.sendgrid = sg.default;
         this.sendgrid.setApiKey(sendgridApiKey);
       } catch {
-        console.warn('SendGrid not installed, falling back to SMTP');
+        this.logger.warn('SendGrid SDK unavailable — falling back to SMTP');
         this.setupSmtp();
       }
     } else {
@@ -143,7 +145,7 @@ export class EmailService implements OnModuleInit {
         text: mailOptions.text,
       });
     } else {
-      console.warn('No email transport configured, skipping email send');
+      this.logger.warn('No email transport configured — skipping email send');
     }
   }
 }

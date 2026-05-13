@@ -340,10 +340,12 @@ export class SkillsService {
       return false;
     }
 
-    // Incognito users hide skills unless viewer matched with them
+    // Incognito users hide skills unless viewer matched with them.
+    // Full implementation requires injecting the Match repository and calling
+    // matchRepo.findOne({ where: [{ userId: viewerId, matchedUserId: targetUser.id }, ...] }).
+    // Until then, incognito users never expose their skills.
     if (targetUser.status === UserStatus.INCOGNITO) {
-      // Check if matched - implement based on your matches table
-      return false; // TODO: Check actual match
+      return false;
     }
 
     // Verified and Pro users show skills to everyone

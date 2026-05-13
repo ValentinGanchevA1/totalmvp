@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
@@ -21,6 +22,8 @@ export interface ProfileCompletion {
 
 @Injectable()
 export class UsersService {
+  private readonly logger = new Logger(UsersService.name);
+
   constructor(
     @InjectRepository(User)
     private usersRepo: Repository<User>,
@@ -148,7 +151,7 @@ export class UsersService {
         try {
           await this.s3Service.delete(oldKey);
         } catch (e) {
-          console.error('Failed to delete old photo:', e);
+          this.logger.error('Failed to delete old photo from S3', e);
         }
       }
       photos[position] = url;
@@ -184,7 +187,7 @@ export class UsersService {
       try {
         await this.s3Service.delete(key);
       } catch (e) {
-        console.error('Failed to delete photo from S3:', e);
+        this.logger.error('Failed to delete photo from S3', e);
       }
     }
 

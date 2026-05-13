@@ -1,5 +1,5 @@
 // backend/src/modules/notifications/geofence.service.ts
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Geofence, GeofenceTrigger } from './entities/geofence.entity';
@@ -7,6 +7,8 @@ import { RedisService } from '../../common/redis.service';
 
 @Injectable()
 export class GeofenceService {
+  private readonly logger = new Logger(GeofenceService.name);
+
   constructor(
     @InjectRepository(Geofence)
     private geofenceRepo: Repository<Geofence>,
@@ -53,7 +55,7 @@ export class GeofenceService {
     // Implementation for sending notification
     // This would integrate with a notification service
     const notification = fence.notification;
-    console.log(`Geofence ${eventType} notification for user ${userId}:`, notification);
+    this.logger.log(`Geofence ${eventType} notification for user ${userId}: ${JSON.stringify(notification)}`);
 
     // Increment trigger count
     await this.geofenceRepo.increment({ id: fence.id }, 'triggerCount', 1);

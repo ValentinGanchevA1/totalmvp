@@ -4,18 +4,20 @@
 **Appetite:** dedicated refactor sprint. Plan below is sized for ~2 weeks with 2 engineers (≈40 ideal-engineer-days), with quick wins front-loaded.
 **Method:** static survey of `backend/src` (122 files) and `mobile/src` (78 files), plus root configs, package manifests, and `render.yaml`. Findings cite real file paths so each can be reproduced.
 
+**Last updated:** 2026-05-13 — refactor pass resolved C1, H2, H3, H5, H6, M5, M9, M11 and reduced C3/M1 scope (see ✅ markers below).
+
 ## Executive summary
 
 The MVP is functionally broad — 17 backend modules, matching mobile features — but several foundational choices will bite you in production:
 
-1. **NestJS major-version mismatch** between `@nestjs/core@11` and `@nestjs/common@10` / `@nestjs/platform-*@10` is a runtime-instability time bomb (CRITICAL).
+1. ~~**NestJS major-version mismatch**~~ ✅ Fixed — all `@nestjs/*` packages pinned to `11.1.19`.
 2. **Mobile is on bleeding-edge React 19 + RN 0.83**; many native libs lag this combo, so any dep upgrade is a coin flip (HIGH).
 3. **Effectively zero automated tests** — one mobile smoke test, no `*.spec.ts` in backend at all, despite Jest being configured (HIGH).
-4. **No production observability** — 39 raw `console.*` calls in mobile, App.tsx has a `// TODO: Send to error reporting service` next to the global error handler. You will not know when prod breaks (HIGH).
-5. **Type erosion** — 79 `: any` annotations including SDK clients (`s3Client: any`, `twilio: any`, `rekognition: any`) wipe out the value of typing those APIs (MEDIUM).
-6. **Documentation chaos was already a debt signal** — the source repo has 10+ overlapping checklist MDs at root; this audit consolidates the durable parts into `PRODUCT.md` / `README.md` / `ARCHITECTURE.md` and drops the cruft.
+4. **No production observability** — all bare `console.*` calls in backend replaced with NestJS `Logger`; mobile error boundaries and screens use the `logger` util. Sentry/APM integration still pending.
+5. **Type erosion** — SDK `any` types resolved for S3, Rekognition, Twilio, SendGrid. Remaining `: any` annotations (~65) in service methods and entity DTOs still need work (MEDIUM).
+6. ~~**Documentation chaos**~~ ✅ Fixed — consolidated into `PRODUCT.md`, `README.md`, `ARCHITECTURE.md`, `CLAUDE.md`.
 
-The good news: the architecture is sound. NestJS module boundaries are clear, Redux Toolkit slices are organized per feature, geo + realtime are wired correctly (PostGIS + Redis Socket.IO adapter). Most of the debt is *layering* — observability, tests, version hygiene — not structural.
+The architecture is sound. NestJS module boundaries are clear, Redux Toolkit slices are organized per feature, geo + realtime are wired correctly (PostGIS + Redis Socket.IO adapter). Most remaining debt is *testing* and *observability*.
 
 ---
 

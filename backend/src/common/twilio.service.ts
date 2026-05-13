@@ -1,9 +1,16 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+
+interface TwilioClient {
+  messages: {
+    create(opts: { body: string; from: string; to: string }): Promise<unknown>;
+  };
+}
 
 @Injectable()
 export class TwilioService {
-  private client: any;
+  private readonly logger = new Logger(TwilioService.name);
+  private client: TwilioClient | null = null;
   private fromNumber: string;
 
   constructor(private configService: ConfigService) {
@@ -12,18 +19,17 @@ export class TwilioService {
     this.fromNumber = this.configService.get<string>('TWILIO_PHONE_NUMBER') || '';
 
     if (accountSid && authToken) {
-      // Dynamic import to avoid issues if twilio is not installed
       import('twilio').then((twilio) => {
-        this.client = twilio.default(accountSid, authToken);
+        this.client = twilio.default(accountSid, authToken) as unknown as TwilioClient;
       }).catch(() => {
-        console.warn('Twilio SDK not installed, SMS functionality disabled');
+        this.logger.warn('Twilio SDK unavailable — SMS functionality disabled');
       });
     }
   }
 
   async sendSMS(to: string, message: string): Promise<void> {
     if (!this.client) {
-      console.warn('Twilio not configured, skipping SMS send');
+      this.logger.warn('Twilio not configured — skipping SMS send');
       return;
     }
 
