@@ -4,7 +4,7 @@
  */
 
 import React, { ErrorInfo } from 'react';
-import { StatusBar } from 'react-native';
+import { StatusBar, StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
@@ -13,16 +13,26 @@ import { store, persistor } from './src/store';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { logger } from './src/utils/logger';
+import { initSentry, captureException } from './src/utils/sentry';
+
+// Initialize Sentry
+initSentry();
 
 const handleGlobalError = (error: Error, errorInfo: ErrorInfo) => {
   logger.error('[Global Error]', error.message);
   logger.error('[Component Stack]', errorInfo.componentStack);
+
+  // Send to error reporting service
+  captureException(error, {
+    componentStack: errorInfo.componentStack,
+    errorBoundary: true,
+  });
 };
 
 function App(): React.JSX.Element {
   return (
     <ErrorBoundary onError={handleGlobalError}>
-      <GestureHandlerRootView style={{ flex: 1 }}>
+      <GestureHandlerRootView style={styles.flex}>
         <Provider store={store}>
           <PersistGate loading={null} persistor={persistor}>
             <SafeAreaProvider>
@@ -35,5 +45,9 @@ function App(): React.JSX.Element {
     </ErrorBoundary>
   );
 }
+
+const styles = StyleSheet.create({
+  flex: { flex: 1 },
+});
 
 export default App;

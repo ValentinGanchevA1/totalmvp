@@ -21,15 +21,43 @@ apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) =>
   return config;
 });
 
-// Response interceptor - handle token refresh
+// Response interceptor - handle token refresh and retries
 let isRefreshing = false;
 let failedQueue: Array<{ resolve: Function; reject: Function }> = [];
+
+// Retry configuration
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000; // Start with 1 second
+const BACKOFF_MULTIPLIER = 2;
+
+const shouldRetry = (error: AxiosError): boolean => {
+  // Retry on network errors, 5xx errors, or timeout
+  if (!error.response) return true; // Network error
+  const status = error.response.status;
+  return status >= 500 || status === 408 || status === 429; // 5xx, timeout, or rate limited
+};
+
+const delay = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
+
+const retryRequest = async (config: InternalAxiosRequestConfig, retryCount: number = 0): Promise<any> => {
+  try {
+    return await apiClient(config);
+  } catch (error) {
+    if (retryCount < MAX_RETRIES && shouldRetry(error as AxiosError)) {
+      const delayMs = RETRY_DELAY * Math.pow(BACKOFF_MULTIPLIER, retryCount);
+      await delay(delayMs);
+      return retryRequest(config, retryCount + 1);
+    }
+    throw error;
+  }
+};
 
 apiClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
+    // Handle token refresh for 401 errors
     if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
@@ -59,6 +87,13 @@ apiClient.interceptors.response.use(
       } finally {
         isRefreshing = false;
       }
+    }
+
+    // Handle retries for other errors - set _retry before calling retryRequest
+    // to prevent re-entry through this interceptor on subsequent failures
+    if (shouldRetry(error) && !originalRequest._retry) {
+      originalRequest._retry = true;
+      return retryRequest(originalRequest);
     }
 
     return Promise.reject(error);

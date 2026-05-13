@@ -66,8 +66,6 @@ import { EventDetailScreen } from '../features/events/EventDetailScreen';
 // Stack Screens
 import { ChatScreen } from '../features/chat/ChatScreen';
 import { UserProfileScreen } from '../features/discovery/UserProfileScreen';
-import { LikesReceivedScreen } from '../features/discovery/LikesReceivedScreen';
-import { MatchesScreen } from '../features/discovery/MatchesScreen';
 import { ProfileCreationScreen } from '../features/profile/ProfileCreationScreen';
 import { ProfileEditScreen } from '../features/profile/ProfileEditScreen';
 import { VerificationScreen } from '../features/verification/VerificationScreen';
@@ -81,6 +79,11 @@ import {
   HelpScreen,
   AboutScreen,
 } from '../features/settings';
+
+// Discovery sub-screens
+import { MatchesScreen } from '../features/discovery/MatchesScreen';
+import { LikesReceivedScreen } from '../features/discovery/LikesReceivedScreen';
+import { PremiumScreen } from '../features/payments/PremiumScreen';
 
 // Gamification & Gifts
 import { AchievementsScreen } from '../features/gamification/AchievementsScreen';
@@ -229,7 +232,6 @@ const MainTabs = () => {
 import { Modal, Animated, TouchableWithoutFeedback, Text } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 
-
 const ActionHubModal: React.FC<{ visible: boolean; onClose: () => void }> = ({
   visible,
   onClose,
@@ -239,7 +241,7 @@ const ActionHubModal: React.FC<{ visible: boolean; onClose: () => void }> = ({
   const [scaleAnim] = useState(new Animated.Value(0));
   const [fadeAnim] = useState(new Animated.Value(0));
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (visible) {
       Animated.parallel([
         Animated.spring(scaleAnim, {
@@ -275,13 +277,17 @@ const ActionHubModal: React.FC<{ visible: boolean; onClose: () => void }> = ({
     ]).start(({ finished }) => {
       if (finished) {
         onClose();
-        onFinished?.();
+        if (typeof onFinished === 'function') {
+           onFinished();
+        }
       }
     });
   }, [scaleAnim, fadeAnim, onClose]);
 
   const handleAction = useCallback((route: string) => {
-    handleClose(() => navigation.navigate(route as never));
+    handleClose(() => {
+      navigation.navigate(route as never);
+    });
   }, [handleClose, navigation]);
 
   const actions = [
@@ -323,7 +329,7 @@ const ActionHubModal: React.FC<{ visible: boolean; onClose: () => void }> = ({
       transparent
       animationType="none"
       statusBarTranslucent
-      onRequestClose={handleClose}
+      onRequestClose={() => handleClose()}
     >
       <TouchableWithoutFeedback onPress={() => handleClose()}>
         <Animated.View style={[modalStyles.overlay, { opacity: fadeAnim }]}>
@@ -406,7 +412,7 @@ export const AppNavigator: React.FC = () => {
 
   if (isInitializing) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#0a0a0f', justifyContent: 'center', alignItems: 'center' }}>
+      <View style={loadingStyles.container}>
         <ActivityIndicator color="#00d4ff" size="large" />
       </View>
     );
@@ -539,14 +545,19 @@ export const AppNavigator: React.FC = () => {
               options={{ presentation: 'card' }}
             />
             <Stack.Screen
+              name="Matches"
+              component={MatchesScreen}
+              options={{ presentation: 'card' }}
+            />
+            <Stack.Screen
               name="LikesReceived"
               component={LikesReceivedScreen}
               options={{ presentation: 'card' }}
             />
             <Stack.Screen
-              name="Matches"
-              component={MatchesScreen}
-              options={{ presentation: 'card' }}
+              name="Premium"
+              component={PremiumScreen}
+              options={{ presentation: 'modal' }}
             />
           </>
         )}
@@ -674,6 +685,15 @@ const modalStyles = StyleSheet.create({
     height: 56,
     borderRadius: 28,
     backgroundColor: 'rgba(255,255,255,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});
+
+const loadingStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#0a0a0f',
     justifyContent: 'center',
     alignItems: 'center',
   },

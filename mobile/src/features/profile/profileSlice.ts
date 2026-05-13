@@ -55,7 +55,9 @@ export const submitProfile = createAsyncThunk(
         interests: formData.interests,
         goals: formData.goals,
         photoUrls,
-        location: formData.location, // Include location!
+        location: formData.location
+          ? { lat: formData.location.latitude, lng: formData.location.longitude }
+          : undefined,
       });
 
       logger.debug('submitProfile: Response:', data);

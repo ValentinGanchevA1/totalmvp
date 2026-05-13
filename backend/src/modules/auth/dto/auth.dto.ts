@@ -1,4 +1,4 @@
-import { IsEmail, IsString, MinLength, IsOptional, IsPhoneNumber, ValidateIf, registerDecorator, ValidationOptions, ValidationArguments } from 'class-validator';
+import { IsEmail, IsString, MinLength, IsOptional, registerDecorator, ValidationOptions, ValidationArguments } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 // Custom validator to ensure at least one of email or phone is provided
@@ -82,6 +82,6 @@ export class AuthResponseDto {
     email?: string;
     phone?: string;
     displayName: string;
-    avatarUrl?: string;
+    avatarUrl?: string | null;
   };
 }

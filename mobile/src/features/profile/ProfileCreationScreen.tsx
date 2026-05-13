@@ -42,17 +42,8 @@ export const ProfileCreationScreen: React.FC = () => {
       
       if (submitProfile.fulfilled.match(result)) {
         logger.log('ProfileCreation: Success, updating user state...');
-        
-        // Ensure we preserve the existing profile data while adding completedAt
-        if (user) {
-           dispatch(updateUser({ 
-              profile: { 
-                 ...user.profile, 
-                 completedAt: new Date().toISOString() 
-              } 
-           }));
-        }
-        
+        // Use server-returned profile so completedAt comes from the backend
+        dispatch(updateUser(result.payload));
         logger.log('ProfileCreation: User state updated');
       } else {
         logger.log('ProfileCreation: Submit failed:', result.payload);

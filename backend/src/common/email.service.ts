@@ -1,11 +1,18 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 
+interface SendGridClient {
+  setApiKey(apiKey: string): void;
+  send(data: unknown): Promise<unknown>;
+}
+
 @Injectable()
 export class EmailService implements OnModuleInit {
+  private readonly logger = new Logger(EmailService.name);
   private transporter: nodemailer.Transporter | null = null;
-  private sendgrid: any = null;
+  private sendgrid: SendGridClient | null = null;
+  private initialized = false;
 
   constructor(private configService: ConfigService) {}
 
@@ -15,26 +22,38 @@ export class EmailService implements OnModuleInit {
     if (sendgridApiKey) {
       try {
         const sg = await import('@sendgrid/mail');
-        this.sendgrid = sg.default;
+        this.sendgrid = sg.default as unknown as SendGridClient;
         this.sendgrid.setApiKey(sendgridApiKey);
+        this.logger.log('Email transport: SendGrid');
       } catch {
-        console.warn('SendGrid not installed, falling back to SMTP');
+        this.logger.warn('SendGrid not installed, falling back to SMTP');
         this.setupSmtp();
       }
     } else {
       this.setupSmtp();
     }
+
+    this.initialized = true;
   }
 
   private setupSmtp(): void {
+    const host = this.configService.get<string>('SMTP_HOST', 'smtp.mailtrap.io');
+    const user = this.configService.get<string>('SMTP_USER');
+    const pass = this.configService.get<string>('SMTP_PASS');
+
+    if (!user || !pass) {
+      this.logger.warn(
+        'SMTP credentials (SMTP_USER / SMTP_PASS) are not set — emails will not be delivered',
+      );
+    }
+
     this.transporter = nodemailer.createTransport({
-      host: this.configService.get('SMTP_HOST', 'smtp.mailtrap.io'),
-      port: parseInt(this.configService.get('SMTP_PORT', '587')),
-      auth: {
-        user: this.configService.get('SMTP_USER'),
-        pass: this.configService.get('SMTP_PASS'),
-      },
+      host,
+      port: parseInt(this.configService.get<string>('SMTP_PORT', '587')),
+      auth: { user, pass },
     });
+
+    this.logger.log(`Email transport: SMTP (${host})`);
   }
 
   private escapeHtml(value: string): string {
@@ -124,26 +143,32 @@ export class EmailService implements OnModuleInit {
     html: string;
     text?: string;
   }): Promise<void> {
-    const mailOptions = {
-      from: { email: 'verify@g88.app', name: 'G88' },
-      to: options.to,
-      subject: options.subject,
-      html: options.html,
-      text: options.text,
-    };
+    if (!this.initialized) {
+      throw new Error('EmailService.send() called before onModuleInit completed');
+    }
+
+    if (!this.sendgrid && !this.transporter) {
+      throw new Error(
+        'No email transport configured — set SENDGRID_API_KEY or SMTP_USER/SMTP_PASS/SMTP_HOST',
+      );
+    }
 
     if (this.sendgrid) {
-      await this.sendgrid.send(mailOptions);
-    } else if (this.transporter) {
-      await this.transporter.sendMail({
-        from: '"G88" <verify@g88.app>',
-        to: mailOptions.to,
-        subject: mailOptions.subject,
-        html: mailOptions.html,
-        text: mailOptions.text,
+      await this.sendgrid.send({
+        from: { email: 'verify@g88.app', name: 'G88' },
+        to: options.to,
+        subject: options.subject,
+        html: options.html,
+        text: options.text,
       });
     } else {
-      console.warn('No email transport configured, skipping email send');
+      await this.transporter!.sendMail({
+        from: '"G88" <verify@g88.app>',
+        to: options.to,
+        subject: options.subject,
+        html: options.html,
+        text: options.text,
+      });
     }
   }
 }

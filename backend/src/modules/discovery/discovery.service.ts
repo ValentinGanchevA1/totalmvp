@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Not, In, MoreThan } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { User, SubscriptionTier } from '../users/entities/user.entity';
 import { Swipe, SwipeType } from './entities/swipe.entity';
 import { Match } from './entities/match.entity';
@@ -38,10 +38,10 @@ export class DiscoveryService {
     // Get users already swiped
     const swipedUserIds = await this.swipesRepository
       .createQueryBuilder('swipe')
-      .select('swipe.swipedId')
+      .select('swipe.swipedId', 'swipedId')
       .where('swipe.swiperId = :userId', { userId })
-      .getRawMany()
-      .then((results) => results.map((r) => r.swipe_swipedId));
+      .getRawMany<{ swipedId: string }>()
+      .then((results) => results.map((r) => r.swipedId));
 
     // Build query for discovery profiles
     let query = this.usersRepository
@@ -289,11 +289,12 @@ export class DiscoveryService {
     // Filter out users who we already matched with
     const matchedUserIds = await this.matchesRepository
       .createQueryBuilder('match')
-      .select(['match.user1Id', 'match.user2Id'])
+      .select('match.user1Id', 'user1Id')
+      .addSelect('match.user2Id', 'user2Id')
       .where('match.user1Id = :userId OR match.user2Id = :userId', { userId })
-      .getRawMany()
+      .getRawMany<{ user1Id: string; user2Id: string }>()
       .then((results) =>
-        results.map((r) => (r.match_user1Id === userId ? r.match_user2Id : r.match_user1Id)),
+        results.map((r) => (r.user1Id === userId ? r.user2Id : r.user1Id)),
       );
 
     return likes
@@ -385,7 +386,7 @@ export class DiscoveryService {
   }
 
   private sanitizeUser(user: User) {
-    const { passwordHash, stripeCustomerId, settings, ...safeUser } = user;
+    const { passwordHash, stripeCustomerId, settings, refreshTokenHash, ...safeUser } = user as User & { refreshTokenHash?: string };
     return safeUser;
   }
 }

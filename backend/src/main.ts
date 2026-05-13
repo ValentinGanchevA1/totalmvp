@@ -3,6 +3,10 @@ import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
+import { initSentry } from './common/sentry';
+
+// Initialize Sentry
+initSentry();
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {

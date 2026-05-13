@@ -41,21 +41,21 @@ export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   email: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   phone: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   @Exclude()
   passwordHash: string;
 
-  @Column({ length: 50 })
+  @Column({ type: 'varchar', length: 50 })
   displayName: string;
 
-  @Column({ nullable: true })
-  avatarUrl: string;
+  @Column({ type: 'varchar', nullable: true })
+  avatarUrl: string | null;
 
   @Column({
     type: 'geography',
@@ -106,7 +106,7 @@ export class User {
   @Column({ type: 'enum', enum: SubscriptionTier, default: SubscriptionTier.FREE })
   subscriptionTier: SubscriptionTier;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   stripeCustomerId: string;
 
   @Column({ default: true })
@@ -118,7 +118,7 @@ export class User {
   @Column({ default: false })
   isBanned: boolean;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   bannedReason: string;
 
   @Column({ type: 'jsonb', default: {} })

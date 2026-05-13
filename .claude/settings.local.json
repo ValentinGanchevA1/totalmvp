@@ -62,7 +62,12 @@
       "Bash(xargs grep -l \"s3Service\\\\|S3Service\")",
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\vganc\\\\Documents\\\\Claude\\\\Projects\\\\totalmvp\" -Force)",
       "Bash(Select-Object Name, PSIsContainer)",
-      "Bash(Format-Table -AutoSize)"
+      "Bash(Format-Table -AutoSize)",
+      "Bash(dir \"C:\\\\Users\\\\vganc\\\\Documents\\\\Claude\\\\Projects\\\\totalmvp\" -Recurse -Name)",
+      "Bash(grep -E \"entity\\\\.ts$\")",
+      "Bash(powershell -Command \"Get-ChildItem -Name\")",
+      "Bash(xargs grep -l \"skills\")",
+      "Bash(xargs grep -l \"leaderboard\")"
     ]
   }
 }

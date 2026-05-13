@@ -7,11 +7,13 @@ import { UsersService } from './user.service';
 import { UsersController } from './user.controller';
 import { ProfilesLegacyController } from './profiles-legacy.controller';
 import { CommonModule } from '../../common/common.module';
+import { SkillsModule } from '../skills/skills.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([User, Verification, SocialLink]),
     CommonModule,
+    SkillsModule,
   ],
   controllers: [UsersController, ProfilesLegacyController],
   providers: [UsersService],

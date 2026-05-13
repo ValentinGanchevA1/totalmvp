@@ -48,6 +48,7 @@
     "@nestjs/typeorm": "^11.0.0",
     "@nestjs/websockets": "11.1.19",
     "@sendgrid/mail": "^8.1.0",
+    "@sentry/node": "^10.52.0",
     "@types/ngeohash": "^0.6.8",
     "@types/nodemailer": "^7.0.4",
     "bcrypt": "^5.1.1",

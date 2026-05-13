@@ -8,12 +8,15 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { ChatService } from './chat.service';
 import { LocationsService } from '../locations/locations.service';
+import { User } from '../users/entities/user.entity';
 
 @WebSocketGateway({
   cors: {
-    origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'],
+    origin: process.env.CORS_ORIGINS?.split(',') || ['http://localhost:3000'],
     credentials: true,
   },
   namespace: '/chat',
@@ -28,12 +31,21 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private jwtService: JwtService,
     private chatService: ChatService,
     private locationsService: LocationsService,
+    @InjectRepository(User)
+    private usersRepository: Repository<User>,
   ) {}
 
   async handleConnection(client: Socket) {
     try {
       const token = client.handshake.auth.token;
       const payload = this.jwtService.verify(token);
+
+      const user = await this.usersRepository.findOne({ where: { id: payload.sub } });
+      if (!user || !user.isActive || user.isBanned) {
+        client.disconnect();
+        return;
+      }
+
       client.data.userId = payload.sub;
       this.userSockets.set(payload.sub, client.id);
 

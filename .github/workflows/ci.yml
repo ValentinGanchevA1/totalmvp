@@ -34,7 +34,6 @@ jobs:
 
       - name: Typecheck
         run: npx tsc --noEmit -p tsconfig.json
-        continue-on-error: true
 
       - name: Build
         run: npm run build

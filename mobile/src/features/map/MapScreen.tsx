@@ -6,7 +6,8 @@ import { Marker, PROVIDER_GOOGLE, Region, MarkerPressEvent } from 'react-native-
 import Geolocation from 'react-native-geolocation-service';
 import { useNavigation } from '@react-navigation/native';
 import { useAppDispatch, useAppSelector } from '../../hooks/redux';
-import { updateLocation, fetchMapData, updateUserLocation, NearbyEvent } from './mapSlice';
+import { updateLocation, fetchMapData, updateUserLocation } from './mapSlice';
+import type { NearbyEvent } from './mapSlice';
 import {
   selectFilteredUserMarkers,
   selectFilteredEvents,

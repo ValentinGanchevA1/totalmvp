@@ -87,17 +87,23 @@ export class S3Service {
 
   async getSignedUrl(key: string, expiresIn = 3600): Promise<string> {
     if (!this.s3Client) {
+      console.warn('S3 not configured, returning public URL instead of signed URL');
       return this.getPublicUrl(key);
     }
 
-    const { GetObjectCommand } = await import('@aws-sdk/client-s3');
-    const { getSignedUrl } = await import('@aws-sdk/s3-request-presigner');
+    try {
+      const { GetObjectCommand } = await import('@aws-sdk/client-s3');
+      const { getSignedUrl } = await import('@aws-sdk/s3-request-presigner');
 
-    const command = new GetObjectCommand({
-      Bucket: this.bucket,
-      Key: key,
-    });
+      const command = new GetObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+      });
 
-    return getSignedUrl(this.s3Client, command, { expiresIn });
+      return getSignedUrl(this.s3Client, command, { expiresIn });
+    } catch (error: any) {
+      console.error(`Failed to generate signed URL: ${error?.message}`, error);
+      return this.getPublicUrl(key);
+    }
   }
 }
